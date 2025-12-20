@@ -1,6 +1,6 @@
 package com.product.service.impl;
 
-import com.product.entity.LoginUser;
+import com.product.domain.LoginUser;
 import com.product.entity.SysUser;
 import com.product.enums.UserStatus;
 import com.product.exception.ServiceException;

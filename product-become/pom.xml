@@ -8,7 +8,6 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <groupId>com</groupId>
     <artifactId>product-become</artifactId>
     <name>product-become</name>
     <description>product-become</description>
@@ -31,21 +30,8 @@
     <dependencies>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-common</artifactId>
+            <artifactId>product-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.product</groupId>
-            <artifactId>product-domain</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.product</groupId>
-            <artifactId>product-auth</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

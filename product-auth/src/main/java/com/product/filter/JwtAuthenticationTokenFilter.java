@@ -1,6 +1,6 @@
 package com.product.filter;
 
-import com.product.entity.LoginUser;
+import com.product.domain.LoginUser;
 import com.product.utils.JwtUtils;
 import com.product.utils.SecurityUtils;
 import com.product.utils.StringUtils;

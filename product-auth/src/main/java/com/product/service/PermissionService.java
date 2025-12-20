@@ -2,7 +2,7 @@ package com.product.service;
 
 import com.product.constant.Constants;
 import com.product.context.PermissionContextHolder;
-import com.product.entity.LoginUser;
+import com.product.domain.LoginUser;
 import com.product.entity.SysRole;
 import com.product.utils.SecurityUtils;
 import com.product.utils.StringUtils;

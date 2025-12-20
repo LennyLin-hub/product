@@ -8,9 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>product-auth</artifactId>
-    <name>product-auth</name>
-    <description>product-auth</description>
+    <artifactId>product-framework</artifactId>
+    <name>product-framework</name>
+    <description>product-framework</description>
     <url/>
     <licenses>
         <license/>
@@ -30,9 +30,8 @@
     <dependencies>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-core</artifactId>
+            <artifactId>product-common</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

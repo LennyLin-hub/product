@@ -31,11 +31,7 @@
         <!-- 项目内部依赖 -->
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.product</groupId>
-            <artifactId>product-domain</artifactId>
+            <artifactId>product-framework</artifactId>
         </dependency>
         <dependency>
             <groupId>com.product</groupId>
@@ -43,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-web</artifactId>
+            <artifactId>product-become</artifactId>
         </dependency>
         <!-- Spring Boot Starters -->
         <dependency>

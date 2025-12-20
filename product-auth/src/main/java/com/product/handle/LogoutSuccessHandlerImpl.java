@@ -1,7 +1,7 @@
 package com.product.handle;
 
 import com.alibaba.fastjson2.JSON;
-import com.product.entity.LoginUser;
+import com.product.domain.LoginUser;
 import com.product.core.result.AjaxResult;
 import com.product.utils.*;
 import com.product.utils.ip.IpUtils;

@@ -4,7 +4,7 @@ import com.product.constant.CacheConstants;
 import com.product.constant.UserConstants;
 import com.product.context.AuthenticationContextHolder;
 import com.product.core.redis.RedisCache;
-import com.product.entity.LoginUser;
+import com.product.domain.LoginUser;
 import com.product.entity.SysUser;
 import com.product.exception.ServiceException;
 import com.product.exception.user.CaptchaException;

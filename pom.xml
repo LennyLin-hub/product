@@ -17,7 +17,8 @@
         <module>product-server</module>
         <module>product-auth</module>
         <module>product-become</module>
-        <module>product-web</module>
+        <module>product-framework</module>
+        <module>product-core</module>
     </modules>
 
     <url/>
@@ -214,7 +215,17 @@
             </dependency>
             <dependency>
                 <groupId>com.product</groupId>
-                <artifactId>product-web</artifactId>
+                <artifactId>product-framework</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-become</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
