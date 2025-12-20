@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,6 +49,7 @@ import java.io.IOException;
 ///
 /// @author fast
 @Component
+@Slf4j
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
 {
     /**
@@ -84,7 +86,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
     {
         // 从请求中解析JWT令牌并获取用户信息
         LoginUser loginUser = jwtUtils.getLoginUser(request);
-
+        log.info("request: {}", request.getRequestURI());
         // 如果用户信息存在且当前SecurityContext中没有认证信息，则进行认证设置
         // 防止重复设置认证信息，避免性能浪费
         if (StringUtils.isNotNull(loginUser) && StringUtils.isNull(SecurityUtils.getAuthentication()))

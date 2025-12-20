@@ -1,6 +1,7 @@
 package com.product.properties;
 
 import com.product.annotation.Anonymous;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RegExUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -49,6 +50,7 @@ import java.util.regex.Pattern;
 /// - 记录匿名访问的操作日志
 ///
 /// @author fast
+@Slf4j
 @Configuration
 public class PermitAllUrlProperties implements InitializingBean, ApplicationContextAware
 {
@@ -95,6 +97,7 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationCont
     @Override
     public void afterPropertiesSet()
     {
+        log.info("开始配置匿名访问注解");
         // 获取Spring MVC的请求映射处理器
         RequestMappingHandlerMapping mapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
 

@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-pojo</artifactId>
+            <artifactId>product-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>com.product</groupId>

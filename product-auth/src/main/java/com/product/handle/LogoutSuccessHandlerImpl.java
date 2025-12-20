@@ -2,12 +2,13 @@ package com.product.handle;
 
 import com.alibaba.fastjson2.JSON;
 import com.product.entity.LoginUser;
-import com.product.entity.result.AjaxResult;
+import com.product.core.result.AjaxResult;
 import com.product.utils.*;
 import com.product.utils.ip.IpUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -48,6 +49,7 @@ import java.io.IOException;
 /// - 支持退出事件通知
 ///
 /// @author fast
+@Slf4j
 @Configuration
 public class LogoutSuccessHandlerImpl implements LogoutSuccessHandler
 {
@@ -85,6 +87,7 @@ public class LogoutSuccessHandlerImpl implements LogoutSuccessHandler
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException
     {
+        log.info("开始配置登出处理方法");
         // 从请求中解析JWT令牌并获取用户信息
         LoginUser loginUser = jwtUtils.getLoginUser(request);
 

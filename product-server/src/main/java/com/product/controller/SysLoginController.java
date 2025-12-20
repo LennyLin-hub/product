@@ -30,14 +30,25 @@ package com.product.controller;
  */
 
 import com.product.constant.Constants;
+import com.product.core.result.AjaxResult;
 import com.product.dto.LoginDTO;
-import com.product.entity.result.AjaxResult;
+import com.product.entity.LoginUser;
+import com.product.entity.SysMenu;
+import com.product.entity.SysUser;
+import com.product.mapper.SysUserMapper;
+import com.product.service.ISysMenuService;
 import com.product.service.SysLoginService;
-import com.product.utils.JwtUtils;
+import com.product.service.SysPermissionService;
+import com.product.utils.SecurityUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Set;
 
 ;
 
@@ -46,6 +57,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * @author fast
  */
+@Slf4j
 @RestController
 public class SysLoginController
 {
@@ -53,7 +65,13 @@ public class SysLoginController
     private SysLoginService loginService;
 
     @Autowired
-    private JwtUtils jwtUtils;
+    private SysPermissionService permissionService;
+
+    @Autowired
+    private SysUserMapper userMapper;
+
+    @Autowired
+    private ISysMenuService menuService;
 
     /**
      * 登录方法
@@ -64,6 +82,7 @@ public class SysLoginController
     @PostMapping("/login")
     public AjaxResult login(@RequestBody LoginDTO loginDTO)
     {
+        log.info("用户登录: {}", loginDTO);
         AjaxResult ajax = AjaxResult.success();
         // 生成令牌
         String token = loginService.login(loginDTO.getUsername(), loginDTO.getPassword(), loginDTO.getCode(),
@@ -77,38 +96,34 @@ public class SysLoginController
      *
      * @return 用户信息
      */
-/*     @GetMapping("getInfo")
+    @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-//        SysUser user = loginUser.getUser();
-        SysUser user = userService.selectUserById(loginUser.getUserId());
-        // 角色集合
-        Set<String> roles = permissionService.getRolePermission(user);
-        // 权限集合
-        Set<String> permissions = permissionService.getMenuPermission(user);
-        if (!loginUser.getPermissions().equals(permissions))
-        {
-            loginUser.setPermissions(permissions);
-            jwtUtils.refreshToken(loginUser);
-        }
+        log.info("获取用户信息");
         AjaxResult ajax = AjaxResult.success();
-        ajax.put("user", user);
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        log.info("loginUser: {}", loginUser.toString());
+        SysUser sysUser = userMapper.selectUserByUserId(loginUser.getUserId());
+        // 获取角色集合
+        Set<String> roles = permissionService.getRolePermission(sysUser);
+        // 获取权限集合
+        Set<String> permissions = permissionService.getMenuPermission(sysUser);
+        ajax.put("user", sysUser);
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
         return ajax;
-    } */
+    }
 
     /**
      * 获取路由信息
      *
      * @return 路由信息
      */
-    /* @GetMapping("getRouters")
+    @GetMapping("getRouters")
     public AjaxResult getRouters()
     {
         Long userId = SecurityUtils.getUserId();
         List<SysMenu> menus = menuService.selectMenuTreeByUserId(userId);
         return AjaxResult.success(menuService.buildMenus(menus));
-    } */
+    }
 }

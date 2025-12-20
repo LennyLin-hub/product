@@ -32,3 +32,7 @@
 - 不要提交密钥/密码；使用环境变量或未入库的 `application-*.yml`/`.env` 文件。
 - 数据源与连接池参数集中于 `application-druid.yml`；根据部署环境调整最大连接数与超时。
 - 日志级别在 `logback-spring.xml` 中配置，生产环境禁止长期启用 DEBUG。
+
+## MyBatis 配置注意
+- 自定义 `MybatisConfig` 时，需使用 MyBatis-Plus 提供的 `MybatisSqlSessionFactoryBean`（而非原生 `SqlSessionFactoryBean`），否则 MyBatis-Plus 自动注入的基础 CRUD 映射会缺失，出现诸如 `Invalid bound statement: BaseMapper#selectList` 的错误。
+- 如果自定义 `MybatisSqlSessionFactoryBean`，记得显式注入 `GlobalConfig` 并设置 `MetaObjectHandler`（如 `MyMetaObjectHandler`），否则 MyBatis-Plus 的自动填充（`createTime`/`updateTime` 等）不会生效，可能导致更新时间为 null 触发约束错误。

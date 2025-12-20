@@ -4,6 +4,7 @@ import com.product.filter.JwtAuthenticationTokenFilter;
 import com.product.handle.AuthenticationEntryPointImpl;
 import com.product.handle.LogoutSuccessHandlerImpl;
 import com.product.properties.PermitAllUrlProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -28,6 +30,7 @@ import org.springframework.web.filter.CorsFilter;
  */
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 @Configuration
+@Slf4j
 public class SecurityConfig
 {
     /**
@@ -72,6 +75,7 @@ public class SecurityConfig
     @Bean
     public AuthenticationManager authenticationManager()
     {
+        log.info("开始构建身份验证器，使用自定义的密码加密");
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setUserDetailsService(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
@@ -96,6 +100,7 @@ public class SecurityConfig
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception
     {
+        log.info("开始构建SpringSecurityFilterChain");
         return httpSecurity
             // CSRF禁用，因为不使用session
             .csrf(csrf -> csrf.disable())
@@ -133,16 +138,7 @@ public class SecurityConfig
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return rawPassword.toString();
-            }
-
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                return rawPassword.toString().equals(encodedPassword);
-            }
-        };
+        log.info("注册 BCryptPasswordEncoder 作为密码编码器");
+        return new BCryptPasswordEncoder();
     }
 }

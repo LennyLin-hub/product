@@ -1,6 +1,7 @@
 package com.product.config;
 
 import com.product.interceptor.RepeatSubmitInterceptor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @author fast
  */
 @Configuration
+@Slf4j
 public class ResourcesConfig implements WebMvcConfigurer
 {
     @Autowired
@@ -37,6 +39,7 @@ public class ResourcesConfig implements WebMvcConfigurer
     @Override
     public void addInterceptors(InterceptorRegistry registry)
     {
+        log.info("开始配置防重复提交拦截器");
         registry.addInterceptor(repeatSubmitInterceptor).addPathPatterns("/**");
     }
 

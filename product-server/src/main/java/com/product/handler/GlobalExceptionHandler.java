@@ -2,7 +2,7 @@ package com.product.handler;
 
 import com.product.constant.HttpStatus;
 import com.product.core.text.Convert;
-import com.product.entity.result.AjaxResult;
+import com.product.core.result.AjaxResult;
 import com.product.exception.ServiceException;
 import com.product.utils.StringUtils;
 import com.product.utils.html.EscapeUtil;

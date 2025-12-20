@@ -2,7 +2,7 @@ package com.product.handle;
 
 import com.alibaba.fastjson2.JSON;
 import com.product.constant.HttpStatus;
-import com.product.entity.result.AjaxResult;
+import com.product.core.result.AjaxResult;
 import com.product.utils.SecurityUtils;
 import com.product.utils.ServletUtils;
 import com.product.utils.StringUtils;

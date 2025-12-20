@@ -73,6 +73,8 @@ public class LoginUser implements UserDetails
     public LoginUser(SysUser user, Set<String> permissions)
     {
         this.user = user;
+        // ensure id is available for downstream calls like SecurityUtils.getUserId()
+        this.userId = user != null ? user.getUserId() : null;
         this.permissions = permissions;
     }
 
@@ -85,7 +87,7 @@ public class LoginUser implements UserDetails
 
     public Long getUserId()
     {
-        return userId;
+        return userId != null ? userId : (user != null ? user.getUserId() : null);
     }
 
     public void setUserId(Long userId)
@@ -240,6 +242,9 @@ public class LoginUser implements UserDetails
     public void setUser(SysUser user)
     {
         this.user = user;
+        if (this.userId == null && user != null) {
+            this.userId = user.getUserId();
+        }
     }
 
     @Override

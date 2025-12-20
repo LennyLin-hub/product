@@ -2,6 +2,7 @@ package com.product.config;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import com.google.code.kaptcha.util.Config;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,11 +16,13 @@ import static com.google.code.kaptcha.Constants.*;
  * @author fast
  */
 @Configuration
+@Slf4j
 public class CaptchaConfig
 {
     @Bean(name = "captchaProducer")
     public DefaultKaptcha getKaptchaBean()
     {
+        log.info("开始注册字符验证码配置");
         DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
         Properties properties = new Properties();
         // 是否有边框 默认为true 我们可以自己设置yes，no
@@ -48,6 +51,7 @@ public class CaptchaConfig
     @Bean(name = "captchaProducerMath")
     public DefaultKaptcha getKaptchaBeanMath()
     {
+        log.info("开始注册数学验证码配置");
         DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
         Properties properties = new Properties();
         // 是否有边框 默认为true 我们可以自己设置yes，no

@@ -4,7 +4,7 @@ import com.product.utils.StringUtils;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpMethod;
+import com.product.enums.HttpMethod;
 
 import java.io.IOException;
 import java.util.ArrayList;

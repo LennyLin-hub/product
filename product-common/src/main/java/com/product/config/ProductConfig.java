@@ -21,6 +21,10 @@ public class ProductConfig
     /** 版权年份 */
     private String copyrightYear;
 
+    /** 上传路径 */
+    // 该项目不采用本地上传，使用aliyun-oss对象存储服务
+    private static String profile;
+
     /** 获取地址开关 */
     private static boolean addressEnabled;
 
@@ -74,5 +78,23 @@ public class ProductConfig
 
     public void setCaptchaType(String captchaType) {
         ProductConfig.captchaType = captchaType;
+    }
+
+    public void setProfile(String profile)
+    {
+        ProductConfig.profile = profile;
+    }
+
+    public static String getProfile()
+    {
+        return profile;
+    }
+
+    /**
+     * 获取头像上传路径
+     */
+    public static String getAvatarPath()
+    {
+        return getProfile() + "/avatar";
     }
 }

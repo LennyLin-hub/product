@@ -2,7 +2,7 @@ package com.product.interceptor;
 
 import com.alibaba.fastjson2.JSON;
 import com.product.annotation.RepeatSubmit;
-import com.product.entity.result.AjaxResult;
+import com.product.core.result.AjaxResult;
 import com.product.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

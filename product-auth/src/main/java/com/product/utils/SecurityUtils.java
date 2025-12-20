@@ -3,7 +3,7 @@ package com.product.utils;
 import com.product.constant.Constants;
 import com.product.constant.HttpStatus;
 import com.product.entity.LoginUser;
-import com.product.entity.result.SysRole;
+import com.product.entity.SysRole;
 import com.product.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
