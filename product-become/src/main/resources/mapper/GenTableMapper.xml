@@ -58,40 +58,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from gen_table
     </sql>
 
-    <select id="selectGenTableList" parameterType="com.product.domain.GenTable" resultMap="GenTableResult">
+    <select id="selectGenTableList" resultMap="GenTableResult">
 		<include refid="selectGenTableVo"/>
 		<where>
-			<if test="tableName != null and tableName != ''">
-				AND lower(table_name) like lower(concat('%', #{tableName}, '%'))
+			<if test="genTable.tableName != null and genTable.tableName != ''">
+				AND lower(table_name) like lower(concat('%', #{genTable.tableName}, '%'))
 			</if>
-			<if test="tableComment != null and tableComment != ''">
-				AND lower(table_comment) like lower(concat('%', #{tableComment}, '%'))
+			<if test="genTable.tableComment != null and genTable.tableComment != ''">
+				AND lower(table_comment) like lower(concat('%', #{genTable.tableComment}, '%'))
 			</if>
-			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
-				AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+			<if test="genTable.params.beginTime != null and genTable.params.beginTime != ''"><!-- 开始时间检索 -->
+				AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{genTable.params.beginTime},'%Y%m%d')
 			</if>
-			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
-				AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+			<if test="genTable.params.endTime != null and genTable.params.endTime != ''"><!-- 结束时间检索 -->
+				AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{genTable.params.endTime},'%Y%m%d')
 			</if>
 		</where>
 	</select>
 
-	<select id="selectDbTableList" parameterType="com.product.domain.GenTable" resultMap="GenTableResult">
+	<select id="selectDbTableList" resultMap="GenTableResult">
 		select table_name, table_comment, create_time, update_time from information_schema.tables
 		where table_schema = (select database())
 		AND table_name NOT LIKE 'qrtz\_%' AND table_name NOT LIKE 'gen\_%'
 		AND table_name NOT IN (select table_name from gen_table)
-		<if test="tableName != null and tableName != ''">
-			AND lower(table_name) like lower(concat('%', #{tableName}, '%'))
+		<if test="genTable.tableName != null and genTable.tableName != ''">
+			AND lower(table_name) like lower(concat('%', #{genTable.tableName}, '%'))
 		</if>
-		<if test="tableComment != null and tableComment != ''">
-			AND lower(table_comment) like lower(concat('%', #{tableComment}, '%'))
+		<if test="genTable.tableComment != null and genTable.tableComment != ''">
+			AND lower(table_comment) like lower(concat('%', #{genTable.tableComment}, '%'))
 		</if>
-		<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
-			AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+		<if test="genTable.params.beginTime != null and genTable.params.beginTime != ''"><!-- 开始时间检索 -->
+			AND date_format(create_time,'%Y%m%d') &gt;= date_format(#{genTable.params.beginTime},'%Y%m%d')
 		</if>
-		<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
-			AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+		<if test="genTable.params.endTime != null and genTable.params.endTime != ''"><!-- 结束时间检索 -->
+			AND date_format(create_time,'%Y%m%d') &lt;= date_format(#{genTable.params.endTime},'%Y%m%d')
 		</if>
         order by create_time desc
 	</select>
