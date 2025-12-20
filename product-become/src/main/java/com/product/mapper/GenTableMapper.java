@@ -2,6 +2,7 @@ package com.product.mapper;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.product.domain.GenTable;
+import com.product.domain.GenTablePage;
 
 import java.util.List;
 
@@ -18,7 +19,7 @@ public interface GenTableMapper
      * @param genTable 业务信息
      * @return 业务集合
      */
-    public IPage<GenTable> selectGenTableList(GenTable genTable);
+    public IPage<GenTable> selectGenTableList(GenTablePage genTable);
 
     /**
      * 查询据库列表
@@ -26,7 +27,7 @@ public interface GenTableMapper
      * @param genTable 业务信息
      * @return 数据库表集合
      */
-    public IPage<GenTable> selectDbTableList(GenTable genTable);
+    public IPage<GenTable> selectDbTableList(GenTablePage genTable);
 
     /**
      * 查询据库列表

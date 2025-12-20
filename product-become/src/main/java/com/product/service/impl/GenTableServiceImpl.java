@@ -9,6 +9,7 @@ import com.product.constant.GenConstants;
 import com.product.core.text.CharsetKit;
 import com.product.domain.GenTable;
 import com.product.domain.GenTableColumn;
+import com.product.domain.GenTablePage;
 import com.product.exception.ServiceException;
 import com.product.mapper.GenTableColumnMapper;
 import com.product.mapper.GenTableMapper;
@@ -25,6 +26,7 @@ import org.apache.velocity.app.Velocity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayOutputStream;
@@ -81,7 +83,9 @@ public class GenTableServiceImpl implements IGenTableService
     public IPage<GenTable> selectGenTableList(GenTable genTable)
     {
         Page<GenTable> page = buildPage();
-        return genTableMapper.selectGenTableList(genTable);
+        GenTablePage genTablePage = new GenTablePage(page);
+        BeanUtils.copyProperties(genTable, genTablePage);
+        return genTableMapper.selectGenTableList(genTablePage);
     }
 
     /**
@@ -93,8 +97,10 @@ public class GenTableServiceImpl implements IGenTableService
     @Override
     public IPage<GenTable> selectDbTableList(GenTable genTable)
     {
-        buildPage();
-        return genTableMapper.selectDbTableList(genTable);
+        Page<GenTable> page = buildPage();
+        GenTablePage genTablePage = new GenTablePage(page);
+        BeanUtils.copyProperties(genTable, genTablePage);
+        return genTableMapper.selectDbTableList(genTablePage);
     }
 
     /**
