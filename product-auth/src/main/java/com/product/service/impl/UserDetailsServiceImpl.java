@@ -114,7 +114,6 @@ public class UserDetailsServiceImpl implements UserDetailsService
     {
         // 例如：查询用户的角色和权限列表
         // Set<Permission> permissions = permissionService.selectUserPermissions(user.getUserId());
-
         // 创建LoginUser对象，包含用户基本信息
         return new LoginUser(user, null);
     }

@@ -41,6 +41,10 @@
             <groupId>com.product</groupId>
             <artifactId>product-auth</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.product</groupId>
+            <artifactId>product-web</artifactId>
+        </dependency>
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
