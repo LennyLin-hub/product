@@ -32,11 +32,9 @@ import java.util.List;
 /// @author chuan
 /// @since 2025/12/17
 public class XssFilter implements Filter {
-    /**
-     * 排除链接列表
-     * 存储不需要进行XSS过滤的URL模式，支持通配符匹配
-     * 例如：/api/upload, /export/*, /public/**
-     */
+    /// 排除链接列表
+    /// 存储不需要进行XSS过滤的URL模式，支持通配符匹配
+    /// 例如：/api/upload, /export/*, /public/**
     public List<String> excludes = new ArrayList<>();
 
     @Override

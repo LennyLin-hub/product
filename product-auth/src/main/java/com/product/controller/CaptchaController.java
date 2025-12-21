@@ -1,7 +1,6 @@
 package com.product.controller;
 
 import com.google.code.kaptcha.Producer;
-import com.product.annotation.Anonymous;
 import com.product.config.ProductConfig;
 import com.product.constant.CacheConstants;
 import com.product.constant.Constants;
@@ -46,7 +45,6 @@ public class CaptchaController
     /**
      * 生成验证码
      */
-    @Anonymous
     @GetMapping("/captchaImage")
     public AjaxResult getCode(HttpServletResponse response) throws IOException
     {

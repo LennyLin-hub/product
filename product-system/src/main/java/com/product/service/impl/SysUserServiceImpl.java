@@ -99,4 +99,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 .eq(SysUser::getUserName, userName)
                 .update();
     }
+
+    @Override
+    public SysUser selectUserByUserId(Long userId) {
+        return userMapper.selectUserByUserId(userId);
+    }
 }

@@ -111,11 +111,11 @@ public class SysUser extends BaseEntity {
 
     /** 账号状态（0正常 1停用） */
     @Excel(name = "账号状态", readConverterExp = "0=正常,1=停用")
-    private Short status;
+    private String status;
 
     @TableField("del_flag")
     /** 删除标志（0代表存在 1代表删除） */
-    private Short delFlag;
+    private String delFlag;
 
     /** 最后登录IP */
     @Excel(name = "最后登录IP", type = Type.EXPORT)

@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <name>product</name>
-    <description>product父工程</description>
+    <description>product: 父工程</description>
 
     <modules>
         <module>product-common</module>
@@ -19,6 +19,8 @@
         <module>product-become</module>
         <module>product-framework</module>
         <module>product-core</module>
+        <module>product-system</module>
+        <module>product-system-api</module>
     </modules>
 
     <url/>
@@ -92,7 +94,16 @@
                 <artifactId>product-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-system</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-system-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- 第三方依赖版本管理 -->
             <dependency>
                 <groupId>com.alibaba</groupId>

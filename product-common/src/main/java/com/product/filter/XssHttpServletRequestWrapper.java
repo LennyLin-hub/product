@@ -34,11 +34,9 @@ import java.io.IOException;
 /// @author fast
 public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper
 {
-    /**
-     * 构造函数
-     *
-     * @param request 原始HTTP请求对象，将被包装进行XSS过滤
-     */
+    /// 构造函数
+    ///
+    /// @param request 原始HTTP请求对象，将被包装进行XSS过滤
     public XssHttpServletRequestWrapper(HttpServletRequest request)
     {
         super(request);

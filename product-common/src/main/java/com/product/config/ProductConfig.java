@@ -97,4 +97,20 @@ public class ProductConfig
     {
         return getProfile() + "/avatar";
     }
+
+    /**
+     * 获取导入上传路径
+     */
+    public static String getImportPath()
+    {
+        return getProfile() + "/import";
+    }
+
+    /**
+     * 获取下载路径
+     */
+    public static String getDownloadPath()
+    {
+        return getProfile() + "/download/";
+    }
 }

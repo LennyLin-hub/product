@@ -68,10 +68,10 @@ public class SysMenu extends BaseEntity {
     private String menuType;
 
     /** 显示状态（0显示 1隐藏） */
-    private Short visible;
+    private String visible;
 
     /** 菜单状态（0正常 1停用） */
-    private Short status;
+    private String status;
 
     /** 权限字符串 */
     @Size(min = 0, max = 100, message = "权限标识长度不能超过100个字符")

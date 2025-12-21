@@ -10,7 +10,7 @@
     </parent>
     <artifactId>product-framework</artifactId>
     <name>product-framework</name>
-    <description>product-framework</description>
+    <description>product-framework: 基础框架模块</description>
     <url/>
     <licenses>
         <license/>

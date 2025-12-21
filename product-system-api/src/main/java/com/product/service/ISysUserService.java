@@ -59,4 +59,6 @@ public interface ISysUserService extends IService<SysUser>
     boolean checkEmailUnique(SysUser user);
 
     boolean updateUserAvatar(String userName, String avatar);
+
+    SysUser selectUserByUserId(Long userId);
 }

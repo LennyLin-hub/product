@@ -31,12 +31,12 @@ package com.product.controller;
 
 import com.product.constant.Constants;
 import com.product.core.result.AjaxResult;
-import com.product.dto.LoginDTO;
 import com.product.domain.LoginUser;
+import com.product.dto.LoginDTO;
 import com.product.entity.SysMenu;
 import com.product.entity.SysUser;
-import com.product.mapper.SysUserMapper;
 import com.product.service.ISysMenuService;
+import com.product.service.ISysUserService;
 import com.product.service.SysLoginService;
 import com.product.service.SysPermissionService;
 import com.product.utils.SecurityUtils;
@@ -68,7 +68,7 @@ public class SysLoginController
     private SysPermissionService permissionService;
 
     @Autowired
-    private SysUserMapper userMapper;
+    private ISysUserService userService;
 
     @Autowired
     private ISysMenuService menuService;
@@ -103,7 +103,7 @@ public class SysLoginController
         AjaxResult ajax = AjaxResult.success();
         LoginUser loginUser = SecurityUtils.getLoginUser();
         log.info("loginUser: {}", loginUser.toString());
-        SysUser sysUser = userMapper.selectUserByUserId(loginUser.getUserId());
+        SysUser sysUser = userService.selectUserByUserId(loginUser.getUserId());
         // 获取角色集合
         Set<String> roles = permissionService.getRolePermission(sysUser);
         // 获取权限集合

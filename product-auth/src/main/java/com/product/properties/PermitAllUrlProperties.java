@@ -54,29 +54,21 @@ import java.util.regex.Pattern;
 @Configuration
 public class PermitAllUrlProperties implements InitializingBean, ApplicationContextAware
 {
-    /**
-     * 路径变量匹配正则表达式
-     * 用于匹配URL中的路径变量，如{id}、{categoryId}等
-     * 模式：\\{(.*?)\\} - 匹配花括号中的任意内容
-     */
+    /// 路径变量匹配正则表达式
+    /// 用于匹配URL中的路径变量，如{id}、{categoryId}等
+    /// 模式：\\{(.*?)\\} - 匹配花括号中的任意内容
     private static final Pattern PATTERN = Pattern.compile("\\{(.*?)\\}");
 
-    /**
-     * Spring应用上下文
-     * 用于获取Spring容器中的Bean，特别是RequestMappingHandlerMapping
-     */
+    /// Spring应用上下文
+    /// 用于获取Spring容器中的Bean，特别是RequestMappingHandlerMapping
     private ApplicationContext applicationContext;
 
-    /**
-     * 允许匿名访问的URL路径列表
-     * 存储所有经过处理的URL路径，格式为通配符匹配
-     */
+    /// 允许匿名访问的URL路径列表
+    /// 存储所有经过处理的URL路径，格式为通配符匹配
     private List<String> urls = new ArrayList<>();
 
-    /**
-     * 通配符常量
-     * 用于替换URL路径变量，支持多级路径匹配
-     */
+    /// 通配符常量
+    /// 用于替换URL路径变量，支持多级路径匹配
     public String ASTERISK = "*";
 
     /// Bean初始化后的回调方法

@@ -269,11 +269,8 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         return UserConstants.NO_FRAME.equals(String.valueOf(menu.getIsFrame())) && StringUtils.ishttp(menu.getPath());
     }
 
-    /**
-     * 内链域名特殊字符替换
-     *
-     * @return 替换后的内链域名
-     */
+    /// 内链域名特殊字符替换
+    ///
     /// 1. 子级内链菜单（外部网址）
     ///      - 输入：parentId=10、path="https://docs.example.com/page"、menuType="C"、isFrame="0"。
     ///      - 逻辑：parentId 非 0 且 isInnerLink 成立（外链且 isFrame=0），先把https://、:、. 等替换成 /，得到 docs/example/com/page。
@@ -287,6 +284,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     ///      isFrame="1" 表示用 iframe 打开子页面）。
     ///      - 逻辑：命中 isMenuFrame，强制路由为根 /，再由前端子路由决定实际展示。
     ///      - 输出：routerPath="/"。
+    /// @return 替换后的内链域名
     public String innerLinkReplaceEach(String path)
     {
         return StringUtils.replaceEach(path, new String[] { Constants.HTTP, Constants.HTTPS, Constants.WWW, ".", ":" },

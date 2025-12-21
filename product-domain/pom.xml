@@ -10,7 +10,7 @@
     </parent>
     <artifactId>product-domain</artifactId>
     <name>product-pojo</name>
-    <description>product-pojo实体类模块</description>
+    <description>product-pojo: 实体类模块</description>
     <url/>
     <licenses>
         <license/>

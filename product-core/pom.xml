@@ -8,11 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <groupId>com.product</groupId>
     <artifactId>product-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>product-core</name>
-    <description>product-core</description>
+    <description>product-core: 依赖实体的公共模块</description>
     <url/>
     <licenses>
         <license/>
