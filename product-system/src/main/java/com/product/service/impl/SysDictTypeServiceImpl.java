@@ -1,6 +1,7 @@
 package com.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -48,14 +49,13 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
 
     @Override
     public Page<SysDictType> selectDictTypeList(SysDictType sysDickType) {
-        LambdaQueryWrapper<SysDictType> wrapper = getLambdaQueryWrapper(sysDickType);
-        getSelectQueryWrapper(wrapper);
+        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
         Page<SysDictType> page = PageUtils.buildPage();
         return page(page, wrapper);
     }
 
-    private static LambdaQueryWrapper<SysDictType> getSelectQueryWrapper(LambdaQueryWrapper<SysDictType> wrapper) {
-        return wrapper.select(
+    private static LambdaQueryChainWrapper<SysDictType> getSelectQueryWrapper() {
+        return Db.lambdaQuery(SysDictType.class).select(
                 SysDictType::getDictId, SysDictType::getDictName,
                 SysDictType::getDictType, SysDictType::getStatus,
                 SysDictType::getCreateTime, SysDictType::getRemark
@@ -88,11 +88,7 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
         if (isSuccess)
         {
             List<SysDictData> dictDatas = SpringUtils.getBean(SysDictDataServiceImpl.class)
-                                                    .getLambdaQueryChainWrapper()
-                                                    .eq(SysDictData::getStatus, "0")
-                                                    .eq(SysDictData::getDictType, sysDictType.getDictType())
-                                                    .orderByAsc(SysDictData::getDictSort)
-                                                    .list();
+                                                    .getDictDatas(sysDictType.getDictType());
             DictUtils.setDictCache(sysDictType.getDictType(), dictDatas);
         }
         return isSuccess;
@@ -184,15 +180,13 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
 
     @Override
     public List<SysDictType> selectDictTypeAll() {
-        LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<>();
-        getSelectQueryWrapper(wrapper);
+        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
         return list(wrapper);
     }
 
     @Override
     public SysDictType selectDictTypeById(Long dictId) {
-        LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<>();
-        getSelectQueryWrapper(wrapper);
+        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
         wrapper.eq(SysDictType::getDictId, dictId);
         return this.getOne(wrapper);
     }

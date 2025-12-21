@@ -99,6 +99,9 @@ public class GenTable extends BaseEntity
     /** 上级菜单名称字段 */
     private String parentMenuName;
 
+    /** 备注 */
+    private String remark;
+
     public Long getTableId()
     {
         return tableId;
@@ -372,6 +375,16 @@ public class GenTable extends BaseEntity
     public boolean isSuperColumn(String javaField)
     {
         return isSuperColumn(this.tplCategory, javaField);
+    }
+
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
+    }
+
+    public String getRemark()
+    {
+        return remark;
     }
 
     public static boolean isSuperColumn(String tplCategory, String javaField)

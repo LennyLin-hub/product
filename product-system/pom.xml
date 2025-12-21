@@ -9,8 +9,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>product-system</artifactId>
-    <name>product-dict</name>
-    <description>product-dict: 字典模块</description>
+    <name>product-system</name>
+    <description>product-system: 字典模块</description>
     <url/>
     <licenses>
         <license/>

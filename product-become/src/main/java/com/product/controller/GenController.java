@@ -103,7 +103,7 @@ public class GenController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('tool:gen:import')")
     @PostMapping("/importTable")
-    public AjaxResult importTableSave(String tables)
+    public AjaxResult importTableSave(@RequestParam("tables") String tables)
     {
         // 有可能为批量导入
         String[] tableNames = Convert.toStrArray(tables);
@@ -166,7 +166,7 @@ public class GenController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('tool:gen:remove')")
     @DeleteMapping("/{tableIds}")
-    public AjaxResult remove(@PathVariable Long[] tableIds)
+    public AjaxResult remove(@PathVariable("tableIds") Long[] tableIds)
     {
         genTableService.deleteGenTableByIds(tableIds);
         return success();

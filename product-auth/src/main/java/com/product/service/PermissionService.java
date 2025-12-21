@@ -6,6 +6,7 @@ import com.product.domain.LoginUser;
 import com.product.entity.SysRole;
 import com.product.utils.SecurityUtils;
 import com.product.utils.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -16,6 +17,7 @@ import java.util.Set;
  *
  * @author fast
  */
+@Slf4j
 @Service("ss")
 public class PermissionService
 {

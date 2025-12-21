@@ -1,5 +1,6 @@
 package com.product.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.product.entity.SysDictData;
 
@@ -13,4 +14,16 @@ import java.util.List;
  */
 public interface ISysDictDataService extends IService<SysDictData> {
     List<SysDictData> selectDictDataList(SysDictData sysDictData);
+
+    SysDictData selectDictDataById(Long dictCode);
+
+    Page<SysDictData> selectDictDataList(Page<SysDictData> page, SysDictData sysDictData);
+
+    List<SysDictData> selectDictDataByType(String dictType);
+
+    boolean insertDictData(SysDictData dict);
+
+    void deleteDictDataByIds(Long[] dictCodes);
+
+    boolean updateDictData(SysDictData dict);
 }
