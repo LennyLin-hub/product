@@ -1,5 +1,6 @@
 package com.product.service.impl;
 
+import com.product.constant.Constants;
 import com.product.domain.LoginUser;
 import com.product.entity.SysUser;
 import com.product.enums.UserStatus;
@@ -14,6 +15,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /// 用户验证处理类
 /// 该类实现了Spring Security的UserDetailsService接口，是认证流程中的核心组件。
@@ -112,9 +116,13 @@ public class UserDetailsServiceImpl implements UserDetailsService
     /// @return LoginUser对象，实现了UserDetails接口
     public UserDetails createLoginUser(SysUser user)
     {
-        // 例如：查询用户的角色和权限列表
-        // Set<Permission> permissions = permissionService.selectUserPermissions(user.getUserId());
-        // 创建LoginUser对象，包含用户基本信息
-        return new LoginUser(user, null);
+        // TODO: 后续可接入真实的权限查询（角色/菜单权限）
+        Set<String> permissions = new HashSet<>();
+        // 超级管理员直接授予全量权限标识，避免空权限导致拒绝访问
+        if (SysUser.isAdmin(user.getUserId()))
+        {
+            permissions.add(Constants.ALL_PERMISSION);
+        }
+        return new LoginUser(user, permissions);
     }
 }
