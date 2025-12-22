@@ -30,10 +30,6 @@
     <dependencies>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.product</groupId>
             <artifactId>product-system-api</artifactId>
         </dependency>
         <dependency>

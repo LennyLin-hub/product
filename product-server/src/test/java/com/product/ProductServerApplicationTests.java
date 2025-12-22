@@ -17,9 +17,7 @@ class ProductServerApplicationTests {
     void contextLoads() {
         String newPassword = "admin123";
         String s = SecurityUtils.encryptPassword(newPassword);
-        log.info("加密后的密码: {}", s);
         boolean b = SecurityUtils.matchesPassword(newPassword, s);
-        log.info("校验结果: {}", b);
     }
 
 }

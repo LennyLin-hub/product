@@ -82,7 +82,6 @@ public class SysLoginController
     @PostMapping("/login")
     public AjaxResult login(@RequestBody LoginDTO loginDTO)
     {
-        log.info("用户登录: {}", loginDTO);
         AjaxResult ajax = AjaxResult.success();
         // 生成令牌
         String token = loginService.login(loginDTO.getUsername(), loginDTO.getPassword(), loginDTO.getCode(),
@@ -99,10 +98,8 @@ public class SysLoginController
     @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        log.info("获取用户信息");
         AjaxResult ajax = AjaxResult.success();
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        log.info("loginUser: {}", loginUser.toString());
         SysUser sysUser = userService.selectUserByUserId(loginUser.getUserId());
         // 获取角色集合
         Set<String> roles = permissionService.getRolePermission(sysUser);

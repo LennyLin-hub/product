@@ -75,7 +75,6 @@ public class CaptchaController
             String capText = captchaProducerMath.createText();  // 生成运算式，类似2+3=@5
             capStr = capText.substring(0, capText.lastIndexOf("@"));    // 截取获得运算式2+3
             code = capText.substring(capText.lastIndexOf("@") + 1); // 截取获得结果5
-            log.info("获取验证码: {}", capText);
             image = captchaProducerMath.createImage(capStr);    // 生成图片
         }
         else if ("char".equals(captchaType))
@@ -86,8 +85,6 @@ public class CaptchaController
         }
 
         redisCache.setCacheObject(verifyKey, code, Constants.CAPTCHA_EXPIRATION, TimeUnit.MINUTES);
-        log.info("当前缓存的键: {}", redisCache.keys(CacheConstants.CAPTCHA_CODE_KEY));
-        log.info("当前缓存的验证码: {}", redisCache.getCacheObject(verifyKey).toString());
         // 转换流信息写出
         FastByteArrayOutputStream os = new FastByteArrayOutputStream();
         try

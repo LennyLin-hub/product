@@ -3,6 +3,7 @@ package com.product.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.product.entity.SysMenu;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,4 +16,15 @@ import java.util.List;
 @Mapper
 public interface SysMenuMapper extends BaseMapper<SysMenu> {
     List<SysMenu> selectMenuTreeByUserId(Long userId);
+
+    List<SysMenu> selectMenuListByUserId(SysMenu menu);
+
+    /**
+     * 根据角色ID查询菜单树信息
+     *
+     * @param roleId 角色ID
+     * @param menuCheckStrictly 菜单树选择项是否关联显示
+     * @return 选中菜单列表
+     */
+    public List<Long> selectMenuListByRoleId(@Param("roleId") Long roleId, @Param("menuCheckStrictly") boolean menuCheckStrictly);
 }

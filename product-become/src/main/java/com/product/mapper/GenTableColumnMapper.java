@@ -1,6 +1,6 @@
 package com.product.mapper;
 
-import com.product.domain.GenTableColumn;
+import com.product.entity.GenTableColumn;
 
 import java.util.List;
 

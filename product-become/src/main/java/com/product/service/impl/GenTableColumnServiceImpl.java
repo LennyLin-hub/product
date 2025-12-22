@@ -1,7 +1,7 @@
 package com.product.service.impl;
 
 import com.product.core.text.Convert;
-import com.product.domain.GenTableColumn;
+import com.product.entity.GenTableColumn;
 import com.product.mapper.GenTableColumnMapper;
 import com.product.service.IGenTableColumnService;
 import org.springframework.beans.factory.annotation.Autowired;

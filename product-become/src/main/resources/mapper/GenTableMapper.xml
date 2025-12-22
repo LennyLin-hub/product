@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.product.mapper.GenTableMapper">
 
-	<resultMap type="com.product.domain.GenTable" id="GenTableResult">
+	<resultMap type="com.product.entity.GenTable" id="GenTableResult">
 	    <id     property="tableId"        column="table_id"          />
 		<result property="tableName"      column="table_name"        />
 		<result property="tableComment"   column="table_comment"     />
@@ -27,7 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<collection  property="columns"   javaType="java.util.List"  resultMap="GenTableColumnResult" />
 	</resultMap>
 
-	<resultMap type="com.product.domain.GenTableColumn" id="GenTableColumnResult">
+	<resultMap type="com.product.entity.GenTableColumn" id="GenTableColumnResult">
         <id     property="columnId"       column="column_id"      />
         <result property="tableId"        column="table_id"       />
         <result property="columnName"     column="column_name"    />
@@ -136,7 +136,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		order by c.sort
 	</select>
 
-	<insert id="insertGenTable" parameterType="com.product.domain.GenTable" useGeneratedKeys="true" keyProperty="tableId">
+	<insert id="insertGenTable" parameterType="com.product.entity.GenTable" useGeneratedKeys="true" keyProperty="tableId">
         insert into gen_table (
 			<if test="tableName != null">table_name,</if>
 			<if test="tableComment != null and tableComment != ''">table_comment,</if>
@@ -174,7 +174,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ${sql}
     </update>
 
-    <update id="updateGenTable" parameterType="com.product.domain.GenTable">
+    <update id="updateGenTable" parameterType="com.product.entity.GenTable">
         update gen_table
         <set>
             <if test="tableName != null">table_name = #{tableName},</if>

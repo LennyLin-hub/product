@@ -1,7 +1,7 @@
 package com.product.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.product.domain.GenTable;
+import com.product.entity.GenTable;
 
 import java.util.List;
 import java.util.Map;

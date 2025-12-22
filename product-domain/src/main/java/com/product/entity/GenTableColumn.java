@@ -1,4 +1,4 @@
-package com.product.domain;
+package com.product.entity;
 
 import com.product.core.entity.BaseEntity;
 import com.product.utils.StringUtils;

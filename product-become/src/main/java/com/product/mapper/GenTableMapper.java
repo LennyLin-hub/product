@@ -1,7 +1,7 @@
 package com.product.mapper;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.product.domain.GenTable;
+import com.product.entity.GenTable;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

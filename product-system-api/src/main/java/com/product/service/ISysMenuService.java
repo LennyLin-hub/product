@@ -1,6 +1,7 @@
 package com.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.product.domain.TreeSelect;
 import com.product.entity.SysMenu;
 import com.product.vo.RouterVo;
 
@@ -16,4 +17,18 @@ public interface ISysMenuService extends IService<SysMenu> {
     List<SysMenu> selectMenuTreeByUserId(Long userId);
 
     List<RouterVo> buildMenus(List<SysMenu> menus);
+
+    List<SysMenu> selectMenuList(SysMenu menu, Long userId);
+
+    List<SysMenu> selectMenuList(Long userId);
+
+    Object selectMenuListByRoleId(Long roleId);
+
+    boolean checkMenuNameUnique(SysMenu menu);
+
+    boolean hasChildByMenuId(Long menuId);
+
+    boolean checkMenuExistRole(Long menuId);
+
+    List<TreeSelect> buildMenuTreeSelect(List<SysMenu> menus);
 }

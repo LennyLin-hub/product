@@ -17,4 +17,6 @@ public interface SysRoleMapper extends BaseMapper<SysRole> {
     List<SysRole> selectRoleList(SysRole sysRole);
 
     List<SysRole> selectRolesByUserName(String userName);
+
+    SysRole selectRoleById(Long roleId);
 }

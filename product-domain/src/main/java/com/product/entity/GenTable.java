@@ -1,4 +1,4 @@
-package com.product.domain;
+package com.product.entity;
 
 import com.product.constant.GenConstants;
 import com.product.core.entity.BaseEntity;

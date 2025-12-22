@@ -2,8 +2,8 @@ package com.product.util;
 
 import com.product.config.GenConfig;
 import com.product.constant.GenConstants;
-import com.product.domain.GenTable;
-import com.product.domain.GenTableColumn;
+import com.product.entity.GenTable;
+import com.product.entity.GenTableColumn;
 import com.product.utils.StringUtils;
 import org.apache.commons.lang3.RegExUtils;
 

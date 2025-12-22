@@ -1,11 +1,18 @@
 package com.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.product.constant.Constants;
 import com.product.constant.UserConstants;
+import com.product.domain.TreeSelect;
 import com.product.entity.SysMenu;
+import com.product.entity.SysRole;
+import com.product.entity.SysRoleMenu;
+import com.product.entity.SysUser;
 import com.product.mapper.SysMenuMapper;
+import com.product.mapper.SysRoleMapper;
 import com.product.service.ISysMenuService;
 import com.product.utils.SecurityUtils;
 import com.product.utils.StringUtils;
@@ -14,10 +21,12 @@ import com.product.vo.RouterVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Auther: chuan
@@ -30,6 +39,9 @@ import java.util.List;
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements ISysMenuService {
     @Autowired
     private SysMenuMapper menuMapper;
+
+    @Autowired
+    private SysRoleMapper roleMapper;
 
     @Override
     public List<SysMenu> selectMenuTreeByUserId(Long userId) {
@@ -112,6 +124,89 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
             routers.add(router);
         }
         return routers;
+    }
+
+    @Override
+    public List<SysMenu> selectMenuList(SysMenu menu, Long userId) {
+        List<SysMenu> menuList = null;
+        // 管理员显示所有菜单信息
+        if (SysUser.isAdmin(userId))
+        {
+            log.info("是管理员");
+            LambdaQueryWrapper<SysMenu> wrapper = baseSelectWrapper().like(StringUtils.hasText(menu.getMenuName()), SysMenu::getMenuName, menu.getMenuName())
+                    .eq(StringUtils.hasText(menu.getVisible()), SysMenu::getVisible, menu.getVisible())
+                    .eq(StringUtils.hasText(menu.getStatus()), SysMenu::getStatus, menu.getStatus());
+            menuList = list(wrapper);
+        }
+        else
+        {
+            menu.getParams().put("userId", userId);
+            menuList = menuMapper.selectMenuListByUserId(menu);
+        }
+        return menuList;
+    }
+
+    @Override
+    public List<SysMenu> selectMenuList(Long userId) {
+        return selectMenuList(new SysMenu(), userId);
+    }
+
+    @Override
+    public Object selectMenuListByRoleId(Long roleId) {
+        SysRole role = roleMapper.selectRoleById(roleId);
+        return menuMapper.selectMenuListByRoleId(roleId, role.isMenuCheckStrictly());
+    }
+
+    @Override
+    public boolean checkMenuNameUnique(SysMenu menu) {
+        Long menuId = StringUtils.isNull(menu.getMenuId()) ? -1L : menu.getMenuId();
+        SysMenu info = getOne(
+                                baseSelectWrapper().eq(SysMenu::getMenuName, menu.getMenuName())
+                                        .eq(SysMenu::getParentId, menu.getParentId())
+                                        .last("limit 1")
+        );
+        if (StringUtils.isNotNull(info) && info.getMenuId().longValue() != menuId.longValue())
+        {
+            return UserConstants.NOT_UNIQUE;
+        }
+        return UserConstants.UNIQUE;
+    }
+
+    @Override
+    public boolean hasChildByMenuId(Long menuId) {
+        return lambdaQuery().eq(SysMenu::getParentId, menuId).count() > 0;
+    }
+
+    @Override
+    public boolean checkMenuExistRole(Long menuId) {
+        return Db.lambdaQuery(SysRoleMenu.class).eq(SysRoleMenu::getMenuId, menuId).count() > 0;
+    }
+
+    @Override
+    public List<TreeSelect> buildMenuTreeSelect(List<SysMenu> menus) {
+        List<SysMenu> menuTrees = buildMenuTree(menus);
+        return menuTrees.stream().map(TreeSelect::new).collect(Collectors.toList());
+    }
+
+    public List<SysMenu> buildMenuTree(List<SysMenu> menus)
+    {
+        List<SysMenu> returnList = new ArrayList<SysMenu>();
+        List<Long> tempList = menus.stream().map(SysMenu::getMenuId).collect(Collectors.toList());
+        for (Iterator<SysMenu> iterator = menus.iterator(); iterator.hasNext();)
+        {
+            SysMenu menu = (SysMenu) iterator.next();
+            // 如果是顶级节点, 遍历该父节点的所有子节点
+            if (!tempList.contains(menu.getParentId()))
+            {
+                recursionFn(menus, menu);
+                returnList.add(menu);
+            }
+        }
+        if (returnList.isEmpty())
+        {
+            returnList = menus;
+        }
+        return returnList;
     }
 
     /**
@@ -329,5 +424,20 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     public boolean isParentView(SysMenu menu)
     {
         return menu.getParentId().intValue() != 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType());
+    }
+
+    public static LambdaQueryWrapper<SysMenu> baseSelectWrapper() {
+        LambdaQueryWrapper<SysMenu> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(
+                SysMenu::getMenuId, SysMenu::getMenuName,
+                SysMenu::getParentId, SysMenu::getOrderNum,
+                SysMenu::getPath, SysMenu::getComponent,
+                SysMenu::getQuery, SysMenu::getRouteName,
+                SysMenu::getIsFrame, SysMenu::getIsCache,
+                SysMenu::getMenuType, SysMenu::getVisible,
+                SysMenu::getStatus, SysMenu::getPerms,
+                SysMenu::getIcon, SysMenu::getCreateTime
+        );
+        return wrapper;
     }
 }

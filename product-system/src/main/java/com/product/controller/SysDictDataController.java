@@ -17,12 +17,12 @@ package com.product.controller;
 /// - PUT /system/dict/data - 修改字典数据
 /// - DELETE /system/dict/data/{dictCodes} - 删除字典数据
 /// - GET /system/dict/data/export - 导出字典数据
+
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.product.core.page.TableDataInfo;
 import com.product.core.result.AjaxResult;
 import com.product.entity.SysDictData;
 import com.product.service.ISysDictDataService;
-import com.product.service.ISysDictTypeService;
 import com.product.utils.ExcelUtil;
 import com.product.utils.PageUtils;
 import com.product.utils.StringUtils;
@@ -46,9 +46,6 @@ public class SysDictDataController extends BaseController
 {
     @Autowired
     private ISysDictDataService dictDataService;
-
-    @Autowired
-    private ISysDictTypeService dictTypeService;
 
     @PreAuthorize("@ss.hasPermi('system:dict:list')")
     @GetMapping("/list")

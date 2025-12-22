@@ -118,7 +118,6 @@ public class SysUserController extends BaseController
         if (StringUtils.isNotNull(userId))
         {
             SysUser sysUser = userService.selectUserById(userId);
-            log.info("sysUser={}", sysUser);
             ajax.put(AjaxResult.DATA_TAG, sysUser);
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
         }
