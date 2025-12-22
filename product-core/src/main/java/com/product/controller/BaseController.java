@@ -80,6 +80,7 @@ public class BaseController
         rspData.setMsg("查询成功");
         rspData.setRows(page.getRecords());
         rspData.setTotal(page.getTotal());
+        log.info(String.valueOf(rspData.getTotal()));
         return rspData;
     }
 

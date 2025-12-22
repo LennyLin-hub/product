@@ -1,7 +1,6 @@
 package com.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -49,13 +48,14 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
 
     @Override
     public Page<SysDictType> selectDictTypeList(SysDictType sysDickType) {
-        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
+        LambdaQueryWrapper<SysDictType> wrapper = getLambdaQueryWrapper(sysDickType);
+        applySelectColumns(wrapper);
         Page<SysDictType> page = PageUtils.buildPage();
         return page(page, wrapper);
     }
 
-    private static LambdaQueryChainWrapper<SysDictType> getSelectQueryWrapper() {
-        return Db.lambdaQuery(SysDictType.class).select(
+    private static void applySelectColumns(LambdaQueryWrapper<SysDictType> wrapper) {
+        wrapper.select(
                 SysDictType::getDictId, SysDictType::getDictName,
                 SysDictType::getDictType, SysDictType::getStatus,
                 SysDictType::getCreateTime, SysDictType::getRemark
@@ -180,13 +180,15 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
 
     @Override
     public List<SysDictType> selectDictTypeAll() {
-        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
+        LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<>();
+        applySelectColumns(wrapper);
         return list(wrapper);
     }
 
     @Override
     public SysDictType selectDictTypeById(Long dictId) {
-        LambdaQueryChainWrapper<SysDictType> wrapper = getSelectQueryWrapper();
+        LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<>();
+        applySelectColumns(wrapper);
         wrapper.eq(SysDictType::getDictId, dictId);
         return this.getOne(wrapper);
     }

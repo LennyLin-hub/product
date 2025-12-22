@@ -1,48 +1,42 @@
 package com.product.controller;
 
-/**
- * 系统用户控制器
- *
- * @author travel
- * @version 1.0
- * @since 2025-12-15
- *
- * 功能描述：
- * 提供系统用户的增删改查功能，包括：
- * - 用户的分页查询
- * - 用户的导出功能
- * - 新增、修改、删除用户
- * - 用户密码重置
- * - 用户状态管理
- * - 用户角色分配
- * - 用户授权管理
- * - 查询用户已分配角色
- * - 取消用户角色授权
- * - 批量取消用户角色授权
- * - 导入用户数据
- *
- * API路径：
- * - GET /system/user/list - 分页查询用户
- * - POST /system/user - 新增用户
- * - PUT /system/user - 修改用户
- * - GET /system/user/{userId} - 查询用户详情
- * - DELETE /system/user/{userIds} - 删除用户
- * - GET /system/user/export - 导出用户
- * - GET /system/user/{userId}/authRole - 查询用户角色
- * - PUT /system/user/authRole - 修改用户角色
- * - PUT /system/user/resetPwd/{userIds} - 重置用户密码
- * - PUT /system/user/changeStatus - 修改用户状态
- * - POST /system/user/importData - 导入用户数据
- * - GET /system/user/importTemplate - 下载导入模板
- *
- * 安全特性：
- * - 密码加密存储
- * - 用户状态锁定
- * - 角色权限控制
- * - 数据权限过滤
- * - 操作日志记录
- */
-
+/// 系统用户控制器
+///
+/// @author travel
+/// @version 1.0
+/// @since 2025-12-15
+/// 功能描述：
+/// 提供系统用户的增删改查功能，包括：
+/// - 用户的分页查询
+/// - 用户的导出功能
+/// - 新增、修改、删除用户
+/// - 用户密码重置
+/// - 用户状态管理
+/// - 用户角色分配
+/// - 用户授权管理
+/// - 查询用户已分配角色
+/// - 取消用户角色授权
+/// - 批量取消用户角色授权
+/// - 导入用户数据
+/// API路径：
+/// - GET /system/user/list - 分页查询用户
+/// - POST /system/user - 新增用户
+/// - PUT /system/user - 修改用户
+/// - GET /system/user/{userId} - 查询用户详情
+/// - DELETE /system/user/{userIds} - 删除用户
+/// - GET /system/user/export - 导出用户
+/// - GET /system/user/{userId}/authRole - 查询用户角色
+/// - PUT /system/user/authRole - 修改用户角色
+/// - PUT /system/user/resetPwd/{userIds} - 重置用户密码
+/// - PUT /system/user/changeStatus - 修改用户状态
+/// - POST /system/user/importData - 导入用户数据
+/// - GET /system/user/importTemplate - 下载导入模板
+/// 安全特性：
+/// - 密码加密存储
+/// - 用户状态锁定
+/// - 角色权限控制
+/// - 数据权限过滤
+/// - 操作日志记录
 import com.product.core.result.AjaxResult;
 import com.product.entity.SysRole;
 import com.product.entity.SysUser;
