@@ -1,11 +1,11 @@
 package com.product.handler;
 
-import com.product.constant.HttpStatus;
-import com.product.core.text.Convert;
-import com.product.core.result.AjaxResult;
-import com.product.exception.ServiceException;
-import com.product.utils.StringUtils;
-import com.product.utils.html.EscapeUtil;
+import com.product.common.constant.HttpStatus;
+import com.product.common.core.text.Convert;
+import com.product.common.core.result.AjaxResult;
+import com.product.common.exception.ServiceException;
+import com.product.common.utils.StringUtils;
+import com.product.common.utils.html.EscapeUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;

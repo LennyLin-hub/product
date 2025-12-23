@@ -1,6 +1,6 @@
 package com.product.config;
 
-import com.product.constant.Constants;
+import com.product.common.constant.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

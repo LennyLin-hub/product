@@ -1,7 +1,7 @@
 package com.product.config;
 
-import com.product.properties.AliOssProperties;
-import com.product.utils.file.AliOssUtil;
+import com.product.common.properties.AliOssProperties;
+import com.product.common.utils.file.AliOssUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

@@ -1,7 +1,7 @@
 package com.product.config;
 
 import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
-import com.product.utils.uuid.IdUtils;
+import com.product.common.utils.uuid.IdUtils;
 import org.springframework.stereotype.Component;
 
 /**

@@ -1,11 +1,11 @@
 package ${packageName}.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.product.controller.BaseController;
-import com.product.core.page.TableDataInfo;
-import com.product.core.result.AjaxResult;
-import com.product.utils.ExcelUtil;
-import com.product.utils.PageUtils;
+import com.product.core.controller.BaseController;
+import com.product.common.core.page.TableDataInfo;
+import com.product.common.core.result.AjaxResult;
+import com.product.core.utils.ExcelUtil;
+import com.product.common.utils.PageUtils;
 import ${packageName}.domain.${ClassName};
 import ${packageName}.service.I${ClassName}Service;
 import jakarta.servlet.http.HttpServletResponse;

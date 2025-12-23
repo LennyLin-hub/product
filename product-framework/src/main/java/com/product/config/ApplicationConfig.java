@@ -1,5 +1,6 @@
 package com.product.config;
 
+import com.product.common.utils.spring.SpringUtils;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,7 @@ import java.util.TimeZone;
 /// 这个配置对于在同一个类中调用带有事务注解或切面注解的方法时非常重要，
 /// 可以确保AOP功能正常工作（如事务、缓存、日志等切面）。
 ///
-/// @see com.product.utils.spring.SpringUtils#getAopProxy(Object)
+/// @see SpringUtils#getAopProxy(Object)
 @EnableAspectJAutoProxy(exposeProxy = true)
 /// MyBatis Mapper接口自动扫描配置
 /// 扫描指定路径下的Mapper接口，自动创建代理类并注册到Spring容器中。

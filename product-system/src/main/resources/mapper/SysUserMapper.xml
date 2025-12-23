@@ -1,8 +1,8 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.product.mapper.SysUserMapper">
-    <resultMap type="com.product.entity.SysUser" id="SysUserResult">
+<mapper namespace="com.product.system.mapper.SysUserMapper">
+    <resultMap type="com.product.domain.entity.SysUser" id="SysUserResult">
         <id     property="userId"       column="user_id"      />
         <result property="userName"     column="user_name"    />
         <result property="email"        column="email"        />
@@ -18,7 +18,7 @@
         <collection  property="roles"   javaType="java.util.List"  resultMap="RoleResult" />
     </resultMap>
 
-    <resultMap id="RoleResult" type="com.product.entity.SysRole">
+    <resultMap id="RoleResult" type="com.product.domain.entity.SysRole">
         <id     property="roleId"       column="role_id"        />
         <result property="roleName"     column="role_name"      />
         <result property="roleKey"      column="role_key"       />

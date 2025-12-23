@@ -1,13 +1,13 @@
 package com.product.interceptor.impl;
 
 import com.alibaba.fastjson2.JSON;
-import com.product.annotation.RepeatSubmit;
-import com.product.constant.CacheConstants;
-import com.product.core.redis.RedisCache;
-import com.product.filter.RepeatedlyRequestWrapper;
+import com.product.common.annotation.RepeatSubmit;
+import com.product.common.constant.CacheConstants;
+import com.product.common.core.redis.RedisCache;
+import com.product.common.filter.RepeatedlyRequestWrapper;
 import com.product.interceptor.RepeatSubmitInterceptor;
-import com.product.utils.StringUtils;
-import com.product.utils.http.HttpHelper;
+import com.product.common.utils.StringUtils;
+import com.product.common.utils.http.HttpHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

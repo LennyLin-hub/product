@@ -1,6 +1,6 @@
 package com.product.config;
 
-import com.product.utils.Threads;
+import com.product.common.utils.Threads;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

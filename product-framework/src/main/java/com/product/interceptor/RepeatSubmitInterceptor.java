@@ -1,9 +1,9 @@
 package com.product.interceptor;
 
 import com.alibaba.fastjson2.JSON;
-import com.product.annotation.RepeatSubmit;
-import com.product.core.result.AjaxResult;
-import com.product.utils.ServletUtils;
+import com.product.common.annotation.RepeatSubmit;
+import com.product.common.core.result.AjaxResult;
+import com.product.common.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;

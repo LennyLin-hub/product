@@ -1,7 +1,7 @@
 package com.product.manager;
 
-import com.product.utils.Threads;
-import com.product.utils.spring.SpringUtils;
+import com.product.common.utils.Threads;
+import com.product.common.utils.spring.SpringUtils;
 
 import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;

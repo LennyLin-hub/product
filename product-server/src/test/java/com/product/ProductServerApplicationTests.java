@@ -1,7 +1,7 @@
 package com.product;
 
-import com.product.core.redis.RedisCache;
-import com.product.utils.SecurityUtils;
+import com.product.common.core.redis.RedisCache;
+import com.product.core.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
