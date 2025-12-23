@@ -1,0 +1,52 @@
+package ${packageName}.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import ${packageName}.domain.${ClassName};
+#if($table.sub)
+import java.util.List;
+import ${packageName}.domain.${subClassName};
+#end
+
+/**
+ * ${functionName}Mapper接口，基于 MyBatis-Plus
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Mapper
+public interface ${ClassName}Mapper extends BaseMapper<${ClassName}> {
+#if($table.sub)
+    /**
+     * 查询${subTable.functionName}列表
+     *
+     * @param ${pkColumn.javaField} ${functionName}主键
+     * @return ${subTable.functionName}集合
+     */
+    List<${subClassName}> select${subClassName}List(${pkColumn.javaType} ${pkColumn.javaField});
+
+    /**
+     * 批量删除${subTable.functionName}
+     *
+     * @param ${pkColumn.javaField}s 主键集合
+     * @return 结果
+     */
+    int delete${subClassName}By${subTableFkClassName}s(${pkColumn.javaType}[] ${pkColumn.javaField}s);
+
+    /**
+     * 通过主键删除${subTable.functionName}信息
+     *
+     * @param ${pkColumn.javaField} 主键
+     * @return 结果
+     */
+    int delete${subClassName}By${subTableFkClassName}(${pkColumn.javaType} ${pkColumn.javaField});
+
+    /**
+     * 批量新增${subTable.functionName}
+     *
+     * @param ${subclassName}List ${subTable.functionName}列表
+     * @return 结果
+     */
+    int batch${subClassName}(List<${subClassName}> ${subclassName}List);
+#end
+}

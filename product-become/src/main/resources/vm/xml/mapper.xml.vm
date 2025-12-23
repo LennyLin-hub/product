@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="${packageName}.mapper.${ClassName}Mapper">
+#if($table.sub)
+
+    <!-- 子表查询 -->
+    <select id="select${subClassName}List" resultType="${packageName}.domain.${subClassName}">
+        select#foreach ($column in $subTable.columns) $column.columnName#if($foreach.count != $subTable.columns.size()),#end#end
+        from ${subTableName}
+        where ${subTableFkName} = #{${subTableFkName}}
+    </select>
+
+    <!-- 批量删除子表 -->
+    <delete id="delete${subClassName}By${subTableFkClassName}s" parameterType="java.lang.String">
+        delete from ${subTableName} where ${subTableFkName} in
+        <foreach item="${subTableFkclassName}" collection="array" open="(" separator="," close=")">
+            #{${subTableFkclassName}}
+        </foreach>
+    </delete>
+
+    <!-- 根据主表主键删除子表 -->
+    <delete id="delete${subClassName}By${subTableFkClassName}" parameterType="$typeUtils.getFullJavaType($pkColumn.javaType)">
+        delete from ${subTableName} where ${subTableFkName} = #{${subTableFkclassName}}
+    </delete>
+
+    <!-- 批量新增子表数据 -->
+    <insert id="batch${subClassName}">
+        insert into ${subTableName}(#foreach($column in $subTable.columns) $column.columnName#if($foreach.count != $subTable.columns.size()),#end#end) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#foreach($column in $subTable.columns) #{item.$column.javaField}#if($foreach.count != $subTable.columns.size()),#end#end)
+        </foreach>
+    </insert>
+#else
+    <!-- MyBatis-Plus 已提供通用 CRUD，这里按需补充自定义 SQL -->
+#end
+</mapper>

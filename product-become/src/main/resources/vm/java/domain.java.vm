@@ -1,0 +1,66 @@
+package ${packageName}.domain;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.product.annotation.Excel;
+import com.product.core.entity.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+#foreach ($import in $importList)
+import ${import};
+#end
+#if($table.sub)
+import java.util.List;
+#end
+
+/**
+ * ${functionName}对象 ${tableName}
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@TableName("${tableName}")
+public class ${ClassName} extends BaseEntity {
+    private static final long serialVersionUID = 1L;
+
+#foreach ($column in $columns)
+#if(!$table.isSuperColumn($column.javaField))
+    /** $column.columnComment */
+#if($column.list)
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($parentheseIndex != -1)
+    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+#elseif($column.javaType == 'LocalDateTime')
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "${comment}", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+#else
+    @Excel(name = "${comment}")
+#end
+#end
+#if($column.columnName == $pkColumn.columnName)
+    @TableId(value = "$column.columnName", type = #if($pkColumn.increment)IdType.AUTO#elseIdType.ASSIGN_ID#end)
+#else
+    @TableField(value = "$column.columnName")
+#end
+    private $column.javaType $column.javaField;
+
+#end
+#end
+#if($table.sub)
+    /** $table.subTable.functionName信息 */
+    @TableField(exist = false)
+    private List<${subClassName}> ${subclassName}List;
+
+#end
+}

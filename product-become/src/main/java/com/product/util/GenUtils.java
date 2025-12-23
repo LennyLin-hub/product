@@ -21,10 +21,14 @@ public class GenUtils
      */
     public static void initTable(GenTable genTable, String operName)
     {
+        // 设置类名，其中有是否去除表前缀的逻辑
         genTable.setClassName(convertClassName(genTable.getTableName()));
         genTable.setPackageName(GenConfig.getPackageName());
+        // 获取.分隔符最后的字段作为模块名，如com.product.domain -> domain
         genTable.setModuleName(getModuleName(GenConfig.getPackageName()));
+        // 获取_分隔符最后的字段作为业务名，如sys_user -> user
         genTable.setBusinessName(getBusinessName(genTable.getTableName()));
+        // 去除数据库表注释中的表字段
         genTable.setFunctionName(replaceText(genTable.getTableComment()));
         genTable.setFunctionAuthor(GenConfig.getAuthor());
     }
@@ -57,6 +61,10 @@ public class GenUtils
         }
         else if (arraysContains(GenConstants.COLUMNTYPE_NUMBER, dataType))
         {
+            //   | int(11)       | "11"   | ["11"]     | 11 > 10    | Long   |
+            //   | bigint(20)    | "20"   | ["20"]     | 20 > 10    | Long   |
+            //   | decimal(10,0) | "10,0" | ["10","0"] | 小数位=0不满足>0 | Long   |
+
             column.setHtmlType(GenConstants.HTML_INPUT);
 
             // 如果是浮点型 统一用BigDecimal
@@ -214,7 +222,7 @@ public class GenUtils
      */
     public static String replaceText(String text)
     {
-        return RegExUtils.replaceAll(text, "(?:表|花菜)", "");
+        return RegExUtils.replaceAll(text, "(?:表)", "");
     }
 
     /**

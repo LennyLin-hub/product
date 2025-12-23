@@ -1,0 +1,204 @@
+package ${packageName}.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.product.utils.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import java.util.Arrays;
+import java.util.List;
+
+import ${packageName}.domain.${ClassName};
+#if($table.sub)
+import ${packageName}.domain.${subClassName};
+#end
+import ${packageName}.mapper.${ClassName}Mapper;
+import ${packageName}.service.I${ClassName}Service;
+
+/**
+ * ${functionName}Service业务层处理（MyBatis-Plus）
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Service
+public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${ClassName}> implements I${ClassName}Service {
+
+    /**
+     * 查询${functionName}
+     *
+     * @param ${pkColumn.javaField} ${functionName}主键
+     * @return ${functionName}
+     */
+    @Override
+    public ${ClassName} select${ClassName}By${pkColumn.capJavaField}(${pkColumn.javaType} ${pkColumn.javaField}) {
+#if($table.sub)
+        ${ClassName} ${className} = getById(${pkColumn.javaField});
+        if (${className} == null) {
+            return null;
+        }
+        List<${subClassName}> ${subclassName}List = baseMapper.select${subClassName}List(${pkColumn.javaField});
+        ${className}.set${subClassName}List(${subclassName}List);
+        return ${className};
+#else
+        return getById(${pkColumn.javaField});
+#end
+    }
+
+    /**
+     * 查询${functionName}列表
+     *
+     * @param ${className} 查询条件
+     * @return ${functionName}集合
+     */
+    @Override
+    public List<${ClassName}> select${ClassName}List(${ClassName} ${className}) {
+        return list(buildQueryWrapper(${className}));
+    }
+
+    /**
+     * 分页查询${functionName}列表
+     *
+     * @param page      分页参数
+     * @param ${className} 查询条件
+     * @return 分页结果
+     */
+    @Override
+    public Page<${ClassName}> select${ClassName}Page(Page<${ClassName}> page, ${ClassName} ${className}) {
+        return this.page(page, buildQueryWrapper(${className}));
+    }
+
+    /**
+     * 新增${functionName}
+     *
+     * @param ${className} ${functionName}
+     * @return 是否成功
+     */
+    @Override
+    public boolean insert${ClassName}(${ClassName} ${className}) {
+        boolean saved = save(${className});
+#if($table.sub)
+        if (saved) {
+            saveOrUpdate${subClassName}(${className});
+        }
+#end
+        return saved;
+    }
+
+    /**
+     * 批量新增${functionName}
+     *
+     * @param ${className}s ${functionName}列表
+     * @return 成功条数
+     */
+    @Override
+    public int batchInsert${ClassName}(List<${ClassName}> ${className}s) {
+        if (CollectionUtils.isEmpty(${className}s)) {
+            return 0;
+        }
+        boolean success = saveBatch(${className}s);
+        return success ? ${className}s.size() : 0;
+    }
+
+    /**
+     * 修改${functionName}
+     *
+     * @param ${className} ${functionName}
+     * @return 是否成功
+     */
+    @Override
+    public boolean update${ClassName}(${ClassName} ${className}) {
+        boolean updated = updateById(${className});
+#if($table.sub)
+        if (updated) {
+            baseMapper.delete${subClassName}By${subTableFkClassName}(${className}.get${pkColumn.capJavaField}());
+            saveOrUpdate${subClassName}(${className});
+        }
+#end
+        return updated;
+    }
+
+    /**
+     * 批量删除${functionName}
+     *
+     * @param ${pkColumn.javaField}s 主键集合
+     * @return 是否成功
+     */
+    @Override
+    public boolean delete${ClassName}By${pkColumn.capJavaField}s(${pkColumn.javaType}[] ${pkColumn.javaField}s) {
+        if (${pkColumn.javaField}s == null || ${pkColumn.javaField}s.length == 0) {
+            return false;
+        }
+#if($table.sub)
+        baseMapper.delete${subClassName}By${subTableFkClassName}s(${pkColumn.javaField}s);
+#end
+        return removeByIds(Arrays.asList(${pkColumn.javaField}s));
+    }
+
+    /**
+     * 删除${functionName}信息
+     *
+     * @param ${pkColumn.javaField} 主键
+     * @return 是否成功
+     */
+    @Override
+    public boolean delete${ClassName}By${pkColumn.capJavaField}(${pkColumn.javaType} ${pkColumn.javaField}) {
+#if($table.sub)
+        baseMapper.delete${subClassName}By${subTableFkClassName}(${pkColumn.javaField});
+#end
+        return removeById(${pkColumn.javaField});
+    }
+
+    /**
+     * 构建查询条件
+     */
+    private LambdaQueryWrapper<${ClassName}> buildQueryWrapper(${ClassName} ${className}) {
+        LambdaQueryWrapper<${ClassName}> wrapper = new LambdaQueryWrapper<>();
+#foreach($column in $columns)
+#if($column.query)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#if($column.queryType == "BETWEEN")
+        Object begin$AttrName = ${className}.getParams().get("begin$AttrName");
+        Object end$AttrName = ${className}.getParams().get("end$AttrName");
+        wrapper.between(begin$AttrName != null && end$AttrName != null, ${ClassName}::get${column.capJavaField}, begin$AttrName, end$AttrName);
+#elseif($column.queryType == "LIKE")
+#if($column.javaType == 'String')
+        wrapper.like(StringUtils.hasText(${className}.get${column.capJavaField}()), ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#else
+        wrapper.like(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#end
+#elseif($column.queryType == "NE")
+        wrapper.ne(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#elseif($column.queryType == "GT")
+        wrapper.gt(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#elseif($column.queryType == "GTE")
+        wrapper.ge(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#elseif($column.queryType == "LT")
+        wrapper.lt(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#elseif($column.queryType == "LTE")
+        wrapper.le(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#else
+        wrapper.eq(${className}.get${column.capJavaField}() != null, ${ClassName}::get${column.capJavaField}, ${className}.get${column.capJavaField}());
+#end
+#end
+#end
+        return wrapper;
+    }
+
+#if($table.sub)
+    /**
+     * 处理子表数据
+     */
+    private void saveOrUpdate${subClassName}(${ClassName} ${className}) {
+        List<${subClassName}> ${subclassName}List = ${className}.get${subClassName}List();
+        ${pkColumn.javaType} ${pkColumn.javaField} = ${className}.get${pkColumn.capJavaField}();
+        if (CollectionUtils.isEmpty(${subclassName}List)) {
+            return;
+        }
+        ${subclassName}List.forEach(item -> item.set${subTableFkClassName}(${pkColumn.javaField}));
+        baseMapper.batch${subClassName}(${subclassName}List);
+    }
+#end
+}

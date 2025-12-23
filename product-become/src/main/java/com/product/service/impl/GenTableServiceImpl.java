@@ -187,6 +187,7 @@ public class GenTableServiceImpl implements IGenTableService
                 if (row > 0)
                 {
                     // 保存列信息
+                    // 获取主键，非空，注释，排序，类型等等
                     List<GenTableColumn> genTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName);
                     for (GenTableColumn column : genTableColumns)
                     {
@@ -502,19 +503,30 @@ public class GenTableServiceImpl implements IGenTableService
      */
     public void setTableFromOptions(GenTable genTable)
     {
+        // 将options字段（JSON格式字符串）解析为JSONObject对象
         JSONObject paramsObj = JSON.parseObject(genTable.getOptions());
         if (StringUtils.isNotNull(paramsObj))
         {
+            // 从JSON对象中提取树形结构的编码字段（用于树形表的唯一标识字段）
             String treeCode = paramsObj.getString(GenConstants.TREE_CODE);
+            // 从JSON对象中提取树形结构的父编码字段（用于指向父节点的字段）
             String treeParentCode = paramsObj.getString(GenConstants.TREE_PARENT_CODE);
+            // 从JSON对象中提取树形结构的名称字段（用于显示节点名称）
             String treeName = paramsObj.getString(GenConstants.TREE_NAME);
+            // 从JSON对象中提取父菜单ID（用于生成菜单时的上级菜单ID）
             Long parentMenuId = paramsObj.getLongValue(GenConstants.PARENT_MENU_ID);
+            // 从JSON对象中提取父菜单名称（用于显示上级菜单名称）
             String parentMenuName = paramsObj.getString(GenConstants.PARENT_MENU_NAME);
 
+            // 将解析出的树形编码字段设置到生成表对象中
             genTable.setTreeCode(treeCode);
+            // 将解析出的树形父编码字段设置到生成表对象中
             genTable.setTreeParentCode(treeParentCode);
+            // 将解析出的树形名称字段设置到生成表对象中
             genTable.setTreeName(treeName);
+            // 将解析出的父菜单ID设置到生成表对象中
             genTable.setParentMenuId(parentMenuId);
+            // 将解析出的父菜单名称设置到生成表对象中
             genTable.setParentMenuName(parentMenuName);
         }
     }
