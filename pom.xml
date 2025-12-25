@@ -22,6 +22,7 @@
         <module>product-system</module>
         <module>product-system-api</module>
         <module>product-cache</module>
+        <module>product-demand</module>
     </modules>
 
     <url/>
@@ -110,6 +111,11 @@
                 <artifactId>product-cache</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-demand</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- 第三方依赖版本管理 -->
             <dependency>
                 <groupId>com.alibaba</groupId>
@@ -191,6 +197,7 @@
             </plugins>
         </pluginManagement>
     </build>
+
     <repositories>
         <repository>
             <id>public</id>

@@ -2,6 +2,7 @@ package com.product.become.mapper;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.product.domain.entity.GenTable;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  *
  * @author fast
  */
+@Mapper
 public interface GenTableMapper
 {
     /**

@@ -6,7 +6,7 @@
 #if($table.sub)
 
     <!-- 子表查询 -->
-    <select id="select${subClassName}List" resultType="${packageName}.domain.${subClassName}">
+    <select id="select${subClassName}List" resultType="${basePackage}.domain.entity.${subClassName}">
         select#foreach ($column in $subTable.columns) $column.columnName#if($foreach.count != $subTable.columns.size()),#end#end
         from ${subTableName}
         where ${subTableFkName} = #{${subTableFkName}}

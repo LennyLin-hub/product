@@ -9,6 +9,7 @@ import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.Seq;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,7 @@ import java.io.ByteArrayInputStream;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @Slf4j
 public class AliOssUtil {
     private String endpoint;
@@ -88,6 +90,13 @@ public class AliOssUtil {
         FileUploadUtils.assertAllowed(file, MimeTypeUtils.IMAGE_EXTENSION);
         // 生成与本地一致的日期路径+序列文件名
         String objectName = "avatar:" + extractFilename(file);
+        log.info("文件名:{}", objectName);
+        return upload(file.getBytes(), objectName);
+    }
+
+    public String uploadImage(MultipartFile file) throws Exception {
+        FileUploadUtils.assertAllowed(file, MimeTypeUtils.IMAGE_EXTENSION);
+        String objectName = "image:" + extractFilename(file);
         log.info("文件名:{}", objectName);
         return upload(file.getBytes(), objectName);
     }

@@ -1,4 +1,4 @@
-package ${packageName}.domain;
+package ${basePackage}.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -8,6 +8,7 @@ import com.product.common.annotation.Excel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import ${basePackage}.common.core.entity.BaseEntity;
 #foreach ($import in $importList)
 import ${import};
 #end
@@ -40,15 +41,12 @@ public class ${ClassName} extends BaseEntity {
 #end
 #if($parentheseIndex != -1)
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
-#elseif($column.javaType == 'LocalDateTime')
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Excel(name = "${comment}", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
 #else
     @Excel(name = "${comment}")
 #end
 #end
 #if($column.columnName == $pkColumn.columnName)
-    @TableId(value = "$column.columnName", type = #if($pkColumn.increment)IdType.AUTO#elseIdType.ASSIGN_ID#end)
+    @TableId(value = "$column.columnName", type = #if($pkColumn.increment)IdType.AUTO #else IdType.ASSIGN_ID #end)
 #else
     @TableField(value = "$column.columnName")
 #end

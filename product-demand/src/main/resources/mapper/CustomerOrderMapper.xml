@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.product.demand.mapper.CustomerOrderMapper">
+    <resultMap type="com.product.domain.vo.CustomerOrderVO" id="CustomerOrderMap">
+        <id property="orderId" column="order_id"></id>
+        <result property="customerId" column="customer_id"></result>
+        <result property="customerName" column="customer_name"></result>
+        <result property="dueDate" column="due_date"></result>
+        <result property="status" column="status"></result>
+        <result property="priority" column="priority"></result>
+        <result property="createTime" column="create_time"></result>
+        <result property="updateTime" column="update_time"></result>
+    </resultMap>
+    <!-- MyBatis-Plus 已提供通用 CRUD，这里按需补充自定义 SQL -->
+    <select id="selectCustomerOrderPage" resultMap="CustomerOrderMap">
+        select co.order_id, co.customer_id, co.due_date, co.status, co.priority, co.create_time, co.update_time,
+               c.customer_name
+        from customer_order co
+        left join customer c
+        on co.customer_id = c.customer_id
+        order by priority desc
+    </select>
+</mapper>

@@ -1,6 +1,7 @@
 package com.product.become.mapper;
 
 import com.product.domain.entity.GenTableColumn;
+import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import java.util.List;
  *
  * @author fast
  */
+@Mapper
 public interface GenTableColumnMapper
 {
     /**

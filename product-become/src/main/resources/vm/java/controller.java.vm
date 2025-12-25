@@ -6,7 +6,7 @@ import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
 import com.product.core.utils.ExcelUtil;
 import com.product.common.utils.PageUtils;
-import ${packageName}.domain.${ClassName};
+import ${basePackage}.domain.entity.${ClassName};
 import ${packageName}.service.I${ClassName}Service;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;

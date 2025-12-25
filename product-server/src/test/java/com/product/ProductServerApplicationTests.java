@@ -15,9 +15,10 @@ class ProductServerApplicationTests {
 
     @Test
     void contextLoads() {
-        String newPassword = "admin123";
+        String newPassword = "111111";
         String s = SecurityUtils.encryptPassword(newPassword);
         boolean b = SecurityUtils.matchesPassword(newPassword, s);
+        System.out.println(s);
     }
 
 }

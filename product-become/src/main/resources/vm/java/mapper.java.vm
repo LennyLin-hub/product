@@ -2,10 +2,10 @@ package ${packageName}.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import ${packageName}.domain.${ClassName};
+import ${basePackage}.domain.entity.${ClassName};
 #if($table.sub)
 import java.util.List;
-import ${packageName}.domain.${subClassName};
+import ${basePackage}.domain.entity.${subClassName};
 #end
 
 /**

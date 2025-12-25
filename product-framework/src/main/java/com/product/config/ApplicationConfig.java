@@ -1,19 +1,23 @@
 package com.product.config;
 
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.product.common.utils.spring.SpringUtils;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.TimeZone;
 
 /// Spring Boot应用程序核心配置类
 /// 该配置类负责应用程序的基础设施配置，包括：
-/// 1. MyBatis Mapper接口扫描配置
-/// 2. AOP代理对象暴露配置（支持SpringUtils.getAopProxy()方法）
-/// 3. Jackson JSON序列化时区配置
+/// 1. AOP代理对象暴露配置（支持SpringUtils.getAopProxy()方法）
+/// 2. Jackson JSON序列化时区配置
 /// 这是应用程序启动时加载的核心配置之一，确保各组件能够正常工作。
 ///
 /// @author fast
@@ -27,15 +31,6 @@ import java.util.TimeZone;
 ///
 /// @see SpringUtils#getAopProxy(Object)
 @EnableAspectJAutoProxy(exposeProxy = true)
-/// MyBatis Mapper接口自动扫描配置
-/// 扫描指定路径下的Mapper接口，自动创建代理类并注册到Spring容器中。
-/// 使用"com.**.mapper"通配符模式，支持扫描所有com包及其子包下的mapper目录。
-/// 扫描范围示例：
-/// - com.product.mapper.*
-/// - com.product.system.mapper.*
-/// - com.example.user.mapper.*
-/// 这样配置的好处是可以自动发现所有Mapper接口，无需手动注册。
-@MapperScan("com.**.mapper")
 public class ApplicationConfig
 {
     /// Jackson JSON序列化时区配置Bean
@@ -53,6 +48,19 @@ public class ApplicationConfig
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonObjectMapperCustomization()
     {
-        return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder.timeZone(TimeZone.getDefault());
+        // 允许 LocalDateTime 反序列化同时接受“yyyy-MM-dd HH:mm:ss”和仅日期“yyyy-MM-dd”，
+        // 当仅有日期时默认补 00:00:00，避免前端只传日期导致解析失败。
+        DateTimeFormatter flexibleLdtFormatter = new DateTimeFormatterBuilder()
+                .appendPattern("yyyy-MM-dd")
+                .optionalStart().appendPattern(" HH:mm:ss").optionalEnd()
+                .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+                .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+                .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+                .toFormatter();
+
+        return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder
+                .timeZone(TimeZone.getDefault())
+                .serializerByType(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .deserializerByType(LocalDateTime.class, new LocalDateTimeDeserializer(flexibleLdtFormatter));
     }
 }

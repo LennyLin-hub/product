@@ -22,7 +22,6 @@ public class ProductConfig
     private String copyrightYear;
 
     /** 上传路径 */
-    // 该项目不采用本地上传，使用aliyun-oss对象存储服务
     private static String profile;
 
     /** 获取地址开关 */
@@ -112,5 +111,13 @@ public class ProductConfig
     public static String getDownloadPath()
     {
         return getProfile() + "/download/";
+    }
+
+    /**
+     * 获取上传路径
+     */
+    public static String getUploadPath()
+    {
+        return getProfile() + "/upload";
     }
 }

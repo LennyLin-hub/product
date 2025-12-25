@@ -1,5 +1,7 @@
 package com.product.config;
 
+import com.product.common.config.ProductConfig;
+import com.product.common.constant.Constants;
 import com.product.interceptor.RepeatSubmitInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +29,9 @@ public class ResourcesConfig implements WebMvcConfigurer
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry)
     {
-/*          *//** 本地文件上传路径 *//*
+        // 本地文件上传路径映射，使浏览器能够通过 /profile/** 访问到磁盘上的上传文件
         registry.addResourceHandler(Constants.RESOURCE_PREFIX + "/**")
-                .addResourceLocations("file:" + ProductConfig.getProfile() + "/"); */
+                .addResourceLocations("file:" + ProductConfig.getProfile() + "/");
 
     }
 

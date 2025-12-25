@@ -489,19 +489,18 @@ public class VelocityUtils
 
         // 构建基础路径
         String javaPath = PROJECT_PATH + "/" + StringUtils.replace(packageName, ".", "/");  // Java代码路径
-        String mybatisPath = MYBATIS_PATH + "/" + moduleName;                                // MyBatis XML路径
+        String mybatisPath = MYBATIS_PATH;                                // MyBatis XML路径
         String vuePath = "vue";                                                              // Vue前端路径
-
         // === 根据模板类型生成对应文件路径 ===
         if (template.contains("domain.java.vm"))
         {
-            // 实体类：main/java/com/product/system/domain/SysUser.java
-            fileName = StringUtils.format("{}/domain/{}.java", javaPath, className);
+            // 实体类：domain/SysUser.java
+            fileName = StringUtils.format("domain/{}.java", className);
         }
         if (template.contains("sub-domain.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()))
         {
-            // 子表实体类：main/java/com/product/system/domain/OrderItem.java
-            fileName = StringUtils.format("{}/domain/{}.java", javaPath, genTable.getSubTable().getClassName());
+            // 子表实体类：domain/OrderItem.java
+            fileName = StringUtils.format("domain/{}.java", genTable.getSubTable().getClassName());
         }
         else if (template.contains("mapper.java.vm"))
         {
@@ -535,18 +534,18 @@ public class VelocityUtils
         }
         else if (template.contains("api.js.vm"))
         {
-            // 前端API：vue/api/system/user.js
-            fileName = StringUtils.format("{}/api/{}/{}.js", vuePath, moduleName, businessName);
+            // 前端API：api/system/user.js
+            fileName = StringUtils.format("api/{}/{}.js", moduleName, businessName);
         }
         else if (template.contains("index.vue.vm"))
         {
-            // Vue页面：vue/views/system/user/index.vue
-            fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+            // Vue页面：views/system/user/index.vue
+            fileName = StringUtils.format("views/{}/{}/index.vue", moduleName, businessName);
         }
         else if (template.contains("index-tree.vue.vm"))
         {
-            // 树形页面：vue/views/system/user/index.vue
-            fileName = StringUtils.format("{}/views/{}/{}/index.vue", vuePath, moduleName, businessName);
+            // 树形页面：views/system/user/index.vue
+            fileName = StringUtils.format("views/{}/{}/index.vue", moduleName, businessName);
         }
         return fileName;
     }

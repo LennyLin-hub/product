@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.io.VFS;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.plugin.Interceptor;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,13 +39,14 @@ import java.util.List;
  * @version: 1.0
  */
 @Configuration
-@MapperScan("com.product.mapper")
 @Slf4j
 public class MybatisConfig {
     @Autowired
     private Environment env;
     @Autowired
     private MyMetaObjectHandler myMetaObjectHandler;
+    @Autowired
+    private CustomIdGenerator customIdGenerator;
 
     static final String DEFAULT_RESOURCE_PATTERN = "**/*.class";
 
@@ -175,6 +175,8 @@ public class MybatisConfig {
         final MybatisSqlSessionFactoryBean sessionFactory = new MybatisSqlSessionFactoryBean();
         GlobalConfig globalConfig = new GlobalConfig();
         globalConfig.setMetaObjectHandler(myMetaObjectHandler);
+        // 注册自定义 ID 生成器，确保 @TableId(IdType.ASSIGN_UUID) 使用带前缀的 UUID
+        globalConfig.setIdentifierGenerator(customIdGenerator);
         sessionFactory.setGlobalConfig(globalConfig);
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setTypeAliasesPackage(typeAliasesPackage);

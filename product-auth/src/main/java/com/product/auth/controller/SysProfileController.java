@@ -29,15 +29,18 @@ package com.product.auth.controller;
  * - 用户身份验证
  */
 
+import com.product.common.config.ProductConfig;
 import com.product.common.core.result.AjaxResult;
-import com.product.core.controller.BaseController;
-import com.product.core.domain.LoginUser;
-import com.product.domain.entity.SysUser;
-import com.product.system.service.ISysUserService;
-import com.product.core.utils.JwtUtils;
-import com.product.core.utils.SecurityUtils;
 import com.product.common.utils.StringUtils;
 import com.product.common.utils.file.AliOssUtil;
+import com.product.common.utils.file.FileUploadUtils;
+import com.product.common.utils.file.MimeTypeUtils;
+import com.product.core.controller.BaseController;
+import com.product.core.domain.LoginUser;
+import com.product.core.utils.JwtUtils;
+import com.product.core.utils.SecurityUtils;
+import com.product.domain.entity.SysUser;
+import com.product.system.service.ISysUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -146,14 +149,12 @@ public class SysProfileController extends BaseController
      */
     @PostMapping("/avatar")
     public AjaxResult avatar(@RequestParam("avatarfile") MultipartFile file) throws Exception {
-        if (!file.isEmpty())
-        {
+        if (!file.isEmpty()) {
             LoginUser loginUser = getLoginUser();
-            String avatar = aliOssUtil.uploadAvatar(file);
-            if (userService.updateUserAvatar(loginUser.getUsername(), avatar))
-            {
+            String avatar = FileUploadUtils.upload(ProductConfig.getAvatarPath(), file, MimeTypeUtils.IMAGE_EXTENSION);
+            if (userService.updateUserAvatar(loginUser.getUsername(), avatar)) {
                 AjaxResult ajax = AjaxResult.success();
-                ajax.put("imgUrl", avatar);
+                ajax.put("imgUrl" , avatar);
                 // 更新缓存用户头像
                 loginUser.getUser().setAvatar(avatar);
                 jwtUtils.setLoginUser(loginUser);
