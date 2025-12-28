@@ -37,6 +37,7 @@ public interface GenTableMapper
      * @param tableNames 表名称组
      * @return 数据库表集合
      */
+    // 获取表名，表注释，创建时间，更新时间
     public List<GenTable> selectDbTableListByNames(String[] tableNames);
 
     /**

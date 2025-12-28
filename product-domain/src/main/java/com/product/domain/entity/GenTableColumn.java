@@ -351,23 +351,47 @@ public class GenTableColumn extends BaseEntity
     public String readConverterExp()
     {
         String remarks = StringUtils.substringBetween(this.columnComment, "（", "）");
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(remarks))
         {
+            if (!remarks.contains(":") && !remarks.contains("："))
+            {
+                return this.columnComment;
+            }
             for (String value : remarks.split(" "))
             {
                 if (StringUtils.isNotEmpty(value))
                 {
-                    Object startStr = value.subSequence(0, 1);
-                    String endStr = value.substring(1);
-                    sb.append("").append(startStr).append("=").append(endStr).append(",");
+                    int splitIndex = value.indexOf("：");
+                    if (splitIndex < 0)
+                    {
+                        splitIndex = value.indexOf(":");
+                    }
+                    if (splitIndex <= 0 || splitIndex >= value.length() - 1)
+                    {
+                        continue;
+                    }
+                    String startStr = value.substring(0, splitIndex);
+                    String endStr = value.substring(splitIndex + 1);
+                    sb.append(startStr).append("=").append(endStr).append(",");
                 }
             }
-            return sb.deleteCharAt(sb.length() - 1).toString();
+            if (sb.length() > 0)
+            {
+                return sb.deleteCharAt(sb.length() - 1).toString();
+            }
+            return this.columnComment;
         }
         else
         {
             return this.columnComment;
         }
+    }
+
+    public static void main(String[] args) {
+        GenTableColumn genTableColumn = new GenTableColumn();
+        genTableColumn.setColumnComment("订单状态（NEW：未确认 CONFIRMED：已确认 IN_PRODUCTION：生产中 DONE：已完成）");
+        String s = genTableColumn.readConverterExp();
+        System.out.println(s);
     }
 }

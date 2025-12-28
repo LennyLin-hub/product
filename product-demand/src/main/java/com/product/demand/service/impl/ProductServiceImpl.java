@@ -1,6 +1,7 @@
 package com.product.demand.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.product.common.utils.StringUtils;
@@ -8,10 +9,16 @@ import com.product.demand.mapper.ProductMapper;
 import com.product.demand.service.IProductService;
 import com.product.domain.entity.Product;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 产品Service业务层处理（MyBatis-Plus）
@@ -53,6 +60,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      */
     @Override
     public Page<Product> selectProductPage(Page<Product> page, Product product) {
+        System.out.println(product.toString());
         return this.page(page, buildQueryWrapper(product));
     }
 
@@ -120,15 +128,31 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return removeById(productId);
     }
 
+    @Override
+    public IPage<Product> selectCustomerPage() {
+        return page(new Page<>());
+    }
+
     /**
      * 构建查询条件
      */
     private LambdaQueryWrapper<Product> buildQueryWrapper(Product product) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        if (product == null) {
+            return wrapper;
+        }
         wrapper.like(StringUtils.hasText(product.getProductName()), Product::getProductName, product.getProductName());
-        wrapper.eq(product.getImage() != null, Product::getImage, product.getImage());
-        wrapper.eq(product.getCreateTime() != null, Product::getCreateTime, product.getCreateTime());
-        wrapper.eq(product.getUpdateTime() != null, Product::getUpdateTime, product.getUpdateTime());
+        Map<String, Object> params = product.getParams();
+        String beginTime = MapUtils.getString(params, "beginTime");
+        String endTime = MapUtils.getString(params, "endTime");
+        if (StringUtils.hasText(beginTime)) {
+            LocalDateTime start = LocalDate.parse(beginTime, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+            wrapper.ge(Product::getCreateTime, beginTime);
+        }
+        if (StringUtils.hasText(endTime)) {
+            LocalDateTime end = LocalDate.parse(endTime, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(LocalTime.MAX);
+            wrapper.le(Product::getCreateTime, end);
+        }
         return wrapper;
     }
 

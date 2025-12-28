@@ -2,7 +2,9 @@ package ${packageName}.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.product.common.annotation.BizIdPrefix;
 import com.product.common.utils.StringUtils;
+import com.product.common.utils.uuid.IdUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -77,6 +79,11 @@ public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${C
      */
     @Override
     public boolean insert${ClassName}(${ClassName} ${className}) {
+#if(!$pkColumn.increment && $pkColumn.javaType == "String")
+        if (StringUtils.isEmpty(${className}.get${pkColumn.capJavaField}())) {
+            ${className}.set${pkColumn.capJavaField}(buildBizId(${className}));
+        }
+#end
         boolean saved = save(${className});
 #if($table.sub)
         if (saved) {
@@ -97,6 +104,13 @@ public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${C
         if (CollectionUtils.isEmpty(${className}s)) {
             return 0;
         }
+#if(!$pkColumn.increment && $pkColumn.javaType == "String")
+        ${className}s.forEach(item -> {
+            if (StringUtils.isEmpty(item.get${pkColumn.capJavaField}())) {
+                item.set${pkColumn.capJavaField}(buildBizId(item));
+            }
+        });
+#end
         boolean success = saveBatch(${className}s);
         return success ? ${className}s.size() : 0;
     }
@@ -155,6 +169,9 @@ public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${C
      */
     private LambdaQueryWrapper<${ClassName}> buildQueryWrapper(${ClassName} ${className}) {
         LambdaQueryWrapper<${ClassName}> wrapper = new LambdaQueryWrapper<>();
+        if (${className} == null) {
+            return wrapper;
+        }
 #foreach($column in $columns)
 #if($column.query)
 #set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
@@ -187,6 +204,7 @@ public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${C
     }
 
 #if($table.sub)
+#set($subPkColumn=$subTable.pkColumn)
     /**
      * 处理子表数据
      */
@@ -196,8 +214,24 @@ public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${C
         if (CollectionUtils.isEmpty(${subclassName}List)) {
             return;
         }
-        ${subclassName}List.forEach(item -> item.set${subTableFkClassName}(${pkColumn.javaField}));
+        ${subclassName}List.forEach(item -> {
+            item.set${subTableFkClassName}(${pkColumn.javaField});
+#if($subPkColumn && !$subPkColumn.increment && $subPkColumn.javaType == "String")
+            if (StringUtils.isEmpty(item.get${subPkColumn.capJavaField}())) {
+                item.set${subPkColumn.capJavaField}(buildBizId(item));
+            }
+#end
+        });
         baseMapper.batch${subClassName}(${subclassName}List);
+    }
+#end
+
+#if(!$pkColumn.increment && $pkColumn.javaType == "String")
+    private String buildBizId(Object entity) {
+        BizIdPrefix annotation = entity.getClass().getAnnotation(BizIdPrefix.class);
+        String prefix = annotation != null ? annotation.value() : null;
+        String suffix = IdUtils.simpleUUID();
+        return StringUtils.isNotEmpty(prefix) ? prefix + suffix : suffix;
     }
 #end
 }

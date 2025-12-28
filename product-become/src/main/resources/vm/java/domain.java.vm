@@ -8,7 +8,19 @@ import com.product.common.annotation.Excel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+#set($hasCreateTime=false)
+#set($hasUpdateTime=false)
+#foreach ($column in $columns)
+#if($column.javaField == "createTime" || $column.columnName == "create_time")
+#set($hasCreateTime=true)
+#end
+#if($column.javaField == "updateTime" || $column.columnName == "update_time")
+#set($hasUpdateTime=true)
+#end
+#end
+#if($hasCreateTime && $hasUpdateTime)
 import ${basePackage}.common.core.entity.BaseEntity;
+#end
 #foreach ($import in $importList)
 import ${import};
 #end
@@ -24,9 +36,9 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode#if($hasCreateTime && $hasUpdateTime)(callSuper = true)#end
 @TableName("${tableName}")
-public class ${ClassName} extends BaseEntity {
+public class ${ClassName} #if($hasCreateTime && $hasUpdateTime) extends BaseEntity #end{
     private static final long serialVersionUID = 1L;
 
 #foreach ($column in $columns)
@@ -46,7 +58,7 @@ public class ${ClassName} extends BaseEntity {
 #end
 #end
 #if($column.columnName == $pkColumn.columnName)
-    @TableId(value = "$column.columnName", type = #if($pkColumn.increment)IdType.AUTO #else IdType.ASSIGN_ID #end)
+    @TableId(value = "$column.columnName", type =#if($pkColumn.increment) IdType.AUTO#else IdType.ASSIGN_UUID #end)
 #else
     @TableField(value = "$column.columnName")
 #end

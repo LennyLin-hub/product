@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## 项目结构与模块
-- 根 `pom.xml` 为 Maven 聚合工程（Java 17），包含三大模块：`product-common`（公共配置/工具/过滤器/异常）、`product-pojo`（DTO/VO/实体）、`product-server`（Spring Boot 应用与资源）。
+- 根 `pom.xml` 为 Maven 聚合工程（Java 17），包含模块：`product-common`（通用工具模块）、`product-domain`（实体类模块）、`product-server`（启动模块）、`product-auth`（认证模块）、`product-become`（product-become）、`product-framework`（基础框架模块）、`product-core`（依赖实体的公共模块）、`product-system`（字典模块）、`product-system-api`（系统 API 模块）、`product-cache`（redis 缓存模块）、`product-demand`（产品与订单）、`product-pps`（批次与排程管理）。
 - 主代码放在各模块的 `src/main/java`；测试在 `src/test/java`。MyBatis XML、应用配置、日志配置位于 `product-server/src/main/resources`（含 `application.yml`、`application-druid.yml`、`mybatis/mybatis-config.xml`、`logback-spring.xml`）。
 
 ## 构建、测试与本地运行

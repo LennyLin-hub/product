@@ -8,9 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>product-system</artifactId>
-    <name>product-system</name>
-    <description>product-system: 字典模块</description>
+    <artifactId>product-pps</artifactId>
+    <name>product-pps</name>
+    <description>product-pps: 批次与排程管理</description>
     <url/>
     <licenses>
         <license/>
@@ -30,7 +30,7 @@
     <dependencies>
         <dependency>
             <groupId>com.product</groupId>
-            <artifactId>product-system-api</artifactId>
+            <artifactId>product-core</artifactId>
         </dependency>
     </dependencies>
 

@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
 import com.product.common.utils.PageUtils;
+import com.product.common.utils.ServletUtils;
 import com.product.core.controller.BaseController;
 import com.product.core.utils.ExcelUtil;
 import com.product.demand.service.ICustomerOrderService;
 import com.product.domain.entity.CustomerOrder;
 import com.product.domain.vo.CustomerOrderVO;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +23,7 @@ import java.util.List;
  * 订单Controller
  *
  * @author product
- * @date 2025-12-25
+ * @date 2025-12-26
  */
 @RestController
 @RequestMapping("/demand/order")
@@ -33,8 +35,9 @@ public class CustomerOrderController extends BaseController {
      * 查询订单列表
      */
     @GetMapping("/list")
-    public TableDataInfo list(CustomerOrder customerOrder) {
+    public TableDataInfo list(ServletRequest request, CustomerOrder customerOrder) {
         Page<CustomerOrderVO> page = PageUtils.buildPage();
+        System.out.println(ServletUtils.getParams(request).entrySet());
         return getDataTable(customerOrderService.selectCustomerOrderPage(page, customerOrder));
     }
 

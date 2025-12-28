@@ -1,6 +1,8 @@
 package com.product.demand.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.product.common.utils.ServletUtils;
+import com.product.common.utils.StringUtils;
 import com.product.core.controller.BaseController;
 import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
@@ -23,6 +25,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.List;
 
+import static com.product.common.core.page.TableSupport.PAGE_NUM;
+import static com.product.common.core.page.TableSupport.PAGE_SIZE;
+
 /**
  * 产品Controller
  *
@@ -40,6 +45,9 @@ public class ProductController extends BaseController {
      */
     @GetMapping("/list")
     public TableDataInfo list(Product product) {
+        if (!StringUtils.hasText(ServletUtils.getParameter(PAGE_NUM)) || !StringUtils.hasText(ServletUtils.getParameter(PAGE_SIZE))) {
+            return getDataTable(productService.selectCustomerPage());
+        }
         Page<Product> page = PageUtils.buildPage();
         return getDataTable(productService.selectProductPage(page, product));
     }

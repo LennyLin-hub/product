@@ -3,6 +3,9 @@ package com.product.demand.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.product.common.annotation.BizIdPrefix;
+import com.product.common.utils.StringUtils;
+import com.product.common.utils.uuid.IdUtils;
 import com.product.demand.mapper.CustomerOrderMapper;
 import com.product.demand.service.ICustomerOrderService;
 import com.product.domain.entity.CustomerOrder;
@@ -18,13 +21,13 @@ import java.util.List;
  * 订单Service业务层处理（MyBatis-Plus）
  *
  * @author product
- * @date 2025-12-25
+ * @date 2025-12-26
  */
 @Service
 public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, CustomerOrder> implements ICustomerOrderService {
-
     @Autowired
-    private CustomerOrderMapper customerOrderMapper;
+    CustomerOrderMapper customerOrderMapper;
+
 
     /**
      * 查询订单
@@ -34,7 +37,13 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
      */
     @Override
     public CustomerOrder selectCustomerOrderByOrderId(String orderId) {
-        return getById(orderId);
+        CustomerOrder customerOrder = getById(orderId);
+        if (customerOrder == null) {
+            return null;
+        }
+        List<com.product.domain.entity.OrderLine> orderLineList = baseMapper.selectOrderLineList(orderId);
+        customerOrder.setOrderLineList(orderLineList);
+        return customerOrder;
     }
 
     /**
@@ -68,7 +77,13 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
      */
     @Override
     public boolean insertCustomerOrder(CustomerOrder customerOrder) {
+        if (StringUtils.isEmpty(customerOrder.getOrderId())) {
+            customerOrder.setOrderId(buildBizId(customerOrder));
+        }
         boolean saved = save(customerOrder);
+        if (saved) {
+            saveOrUpdateOrderLine(customerOrder);
+        }
         return saved;
     }
 
@@ -83,6 +98,11 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         if (CollectionUtils.isEmpty(customerOrders)) {
             return 0;
         }
+        customerOrders.forEach(order -> {
+            if (StringUtils.isEmpty(order.getOrderId())) {
+                order.setOrderId(buildBizId(order));
+            }
+        });
         boolean success = saveBatch(customerOrders);
         return success ? customerOrders.size() : 0;
     }
@@ -96,6 +116,10 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
     @Override
     public boolean updateCustomerOrder(CustomerOrder customerOrder) {
         boolean updated = updateById(customerOrder);
+        if (updated) {
+            baseMapper.deleteOrderLineByOrderId(customerOrder.getOrderId());
+            saveOrUpdateOrderLine(customerOrder);
+        }
         return updated;
     }
 
@@ -110,6 +134,7 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         if (orderIds == null || orderIds.length == 0) {
             return false;
         }
+        baseMapper.deleteOrderLineByOrderIds(orderIds);
         return removeByIds(Arrays.asList(orderIds));
     }
 
@@ -121,6 +146,7 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
      */
     @Override
     public boolean deleteCustomerOrderByOrderId(String orderId) {
+        baseMapper.deleteOrderLineByOrderId(orderId);
         return removeById(orderId);
     }
 
@@ -133,10 +159,28 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         wrapper.eq(customerOrder.getDueDate() != null, CustomerOrder::getDueDate, customerOrder.getDueDate());
         wrapper.eq(customerOrder.getPriority() != null, CustomerOrder::getPriority, customerOrder.getPriority());
         wrapper.eq(customerOrder.getStatus() != null, CustomerOrder::getStatus, customerOrder.getStatus());
-        // BaseEntity 提供的是 createTime / updateTime；这里原来调用了不存在的 getCreatedTime / getUpdatedTime 导致无法编译
-        wrapper.eq(customerOrder.getCreateTime() != null, CustomerOrder::getCreateTime, customerOrder.getCreateTime());
-        wrapper.eq(customerOrder.getUpdateTime() != null, CustomerOrder::getUpdateTime, customerOrder.getUpdateTime());
         return wrapper;
     }
 
+    /**
+     * 处理子表数据
+     */
+    private void saveOrUpdateOrderLine(CustomerOrder customerOrder) {
+        List<com.product.domain.entity.OrderLine> orderLineList = customerOrder.getOrderLineList();
+        String orderId = customerOrder.getOrderId();
+        if (CollectionUtils.isEmpty(orderLineList)) {
+            return;
+        }
+        orderLineList.forEach(item -> {
+            item.setOrderId(orderId);
+        });
+        baseMapper.batchOrderLine(orderLineList);
+    }
+
+    private String buildBizId(Object entity) {
+        BizIdPrefix annotation = entity.getClass().getAnnotation(BizIdPrefix.class);
+        String prefix = annotation != null ? annotation.value() : null;
+        String suffix = IdUtils.simpleUUID();
+        return StringUtils.isNotEmpty(prefix) ? prefix + suffix : suffix;
+    }
 }

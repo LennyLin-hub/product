@@ -9,7 +9,7 @@
     <select id="select${subClassName}List" resultType="${basePackage}.domain.entity.${subClassName}">
         select#foreach ($column in $subTable.columns) $column.columnName#if($foreach.count != $subTable.columns.size()),#end#end
         from ${subTableName}
-        where ${subTableFkName} = #{${subTableFkName}}
+        where ${subTableFkName} = #{${subTableFkclassName}}
     </select>
 
     <!-- 批量删除子表 -->

@@ -1,7 +1,7 @@
 package com.product.config;
 
+import com.baomidou.mybatisplus.core.incrementer.DefaultIdentifierGenerator;
 import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.product.common.annotation.BizIdPrefix;
 import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
@@ -15,10 +15,14 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CustomIdGenerator implements IdentifierGenerator {
+
+    private static final DefaultIdentifierGenerator ID_GENERATOR = DefaultIdentifierGenerator.getInstance();
+
     @Override
     public Number nextId(Object entity) {
-        // 使用 MyBatis-Plus 提供的雪花算法，确保数值型主键可用
-        return IdWorker.getId();
+        // Delegate to MyBatis-Plus default generator to avoid recursion
+        return ID_GENERATOR.nextId(entity);
+
     }
 
     @Override

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
 import com.product.common.utils.PageUtils;
+import com.product.common.utils.ServletUtils;
+import com.product.common.utils.StringUtils;
 import com.product.core.controller.BaseController;
 import com.product.core.utils.ExcelUtil;
 import com.product.demand.service.ICustomerService;
@@ -15,6 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
+
+import static com.product.common.core.page.TableSupport.PAGE_NUM;
+import static com.product.common.core.page.TableSupport.PAGE_SIZE;
 
 /**
  * 客户Controller
@@ -32,8 +37,8 @@ public class CustomerController extends BaseController {
      * 查询客户列表
      */
     @GetMapping("/list")
-    public TableDataInfo list(@RequestBody(required = false) Customer customer) {
-        if (customer == null) {
+    public TableDataInfo list(Customer customer) {
+        if (!StringUtils.hasText(ServletUtils.getParameter(PAGE_NUM)) || !StringUtils.hasText(ServletUtils.getParameter(PAGE_SIZE))) {
             return getDataTable(customerService.selectCustomerPage());
         }
         Page<Customer> page = PageUtils.buildPage();

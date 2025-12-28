@@ -495,12 +495,12 @@ public class VelocityUtils
         if (template.contains("domain.java.vm"))
         {
             // 实体类：domain/SysUser.java
-            fileName = StringUtils.format("domain/{}.java", className);
+            fileName = StringUtils.format("domain/entity/{}.java", className);
         }
         if (template.contains("sub-domain.java.vm") && StringUtils.equals(GenConstants.TPL_SUB, genTable.getTplCategory()))
         {
             // 子表实体类：domain/OrderItem.java
-            fileName = StringUtils.format("domain/{}.java", genTable.getSubTable().getClassName());
+            fileName = StringUtils.format("domain/entity/{}.java", genTable.getSubTable().getClassName());
         }
         else if (template.contains("mapper.java.vm"))
         {

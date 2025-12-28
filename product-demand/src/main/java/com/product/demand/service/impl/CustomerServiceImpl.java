@@ -9,10 +9,16 @@ import com.product.demand.mapper.CustomerMapper;
 import com.product.demand.service.ICustomerService;
 import com.product.domain.entity.Customer;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 客户Service业务层处理（MyBatis-Plus）
@@ -131,9 +137,21 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
      */
     private LambdaQueryWrapper<Customer> buildQueryWrapper(Customer customer) {
         LambdaQueryWrapper<Customer> wrapper = new LambdaQueryWrapper<>();
+        if (customer == null) {
+            return wrapper;
+        }
         wrapper.like(StringUtils.hasText(customer.getCustomerName()), Customer::getCustomerName, customer.getCustomerName());
-        wrapper.eq(customer.getCreateTime() != null, Customer::getCreateTime, customer.getCreateTime());
-        wrapper.eq(customer.getUpdateTime() != null, Customer::getUpdateTime, customer.getUpdateTime());
+        Map<String, Object> params = customer.getParams();
+        String beginTime = MapUtils.getString(params, "beginTime");
+        String endTime = MapUtils.getString(params, "endTime");
+        if (StringUtils.hasText(beginTime)) {
+            LocalDateTime start = LocalDate.parse(beginTime, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+            wrapper.ge(Customer::getCreateTime, beginTime);
+        }
+        if (StringUtils.hasText(endTime)) {
+            LocalDateTime end = LocalDate.parse(endTime, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(LocalTime.MAX);
+            wrapper.le(Customer::getCreateTime, end);
+        }
         wrapper.eq(customer.getRemark() != null, Customer::getRemark, customer.getRemark());
         return wrapper;
     }
