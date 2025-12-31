@@ -102,4 +102,20 @@ public class ProductionBatchController extends BaseController {
     public AjaxResult remove(@PathVariable String[] batchIds) {
         return toAjax(productionBatchService.deleteProductionBatchByBatchIds(batchIds));
     }
+
+    /**
+     * 释放生产批次
+     */
+    @PutMapping("/release/{batchId}")
+    public AjaxResult release(@PathVariable("batchId") String batchId) {
+        return toAjax(productionBatchService.release(batchId));
+    }
+
+    /**
+     * 取消释放生产批次
+     */
+    @PutMapping("/cancelRelease/{batchId}")
+    public AjaxResult cancelRelease(@PathVariable("batchId") String batchId) {
+        return toAjax(productionBatchService.cancelRelease(batchId));
+    }
 }

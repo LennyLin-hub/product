@@ -54,4 +54,11 @@
             </if>
         </where>
     </select>
+
+    <select id="selectBatchForUpdate" resultType="com.product.domain.entity.ProductionBatch">
+        select batch_id, order_line_id, batch_qty, status
+        from production_batch
+        where batch_id = #{batchId}
+        for update
+    </select>
 </mapper>

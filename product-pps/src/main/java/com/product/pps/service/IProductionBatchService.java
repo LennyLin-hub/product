@@ -80,4 +80,8 @@ public interface IProductionBatchService extends IService<ProductionBatch> {
      * @return 是否成功
      */
     boolean deleteProductionBatchByBatchId(String batchId);
+
+    boolean release(String batchId);
+
+    boolean cancelRelease(String batchId);
 }

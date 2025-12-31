@@ -3,15 +3,21 @@ package com.product.pps.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
+import com.product.common.constant.StatusConstants;
+import com.product.common.exception.ServiceException;
 import com.product.domain.dto.BatchSearchDTO;
+import com.product.domain.entity.OrderLine;
 import com.product.domain.entity.ProductionBatch;
 import com.product.domain.vo.ProductionBatchVO;
+import com.product.pps.mapper.OrderLineAllocationMapper;
 import com.product.pps.mapper.ProductionBatchMapper;
 import com.product.pps.service.IProductionBatchService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.Arrays;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 /**
@@ -24,6 +30,8 @@ import java.util.List;
 public class ProductionBatchServiceImpl extends ServiceImpl<ProductionBatchMapper, ProductionBatch> implements IProductionBatchService {
     @Autowired
     private ProductionBatchMapper productionBatchMapper;
+    @Autowired
+    private OrderLineAllocationMapper orderLineAllocationMapper;
 
     /**
      * 查询生产批次（订单行拆批）
@@ -66,9 +74,23 @@ public class ProductionBatchServiceImpl extends ServiceImpl<ProductionBatchMappe
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean insertProductionBatch(ProductionBatch productionBatch) {
+        if (productionBatch == null || productionBatch.getOrderLineId() == null || productionBatch.getBatchQty() == null) {
+            throw new ServiceException("订单行ID和批次数量不能为空");
+        }
+        if (productionBatch.getStatus() == null) {
+            productionBatch.setStatus(StatusConstants.PLANNED_PRODUCTION_BATCH);
+        }
+        int affected = orderLineAllocationMapper.allocateQty(productionBatch.getOrderLineId(), productionBatch.getBatchQty());
+        if (affected != 1) {
+            throw new ServiceException("订单行可用数量不足，无法拆批");
+        }
         boolean saved = save(productionBatch);
-        return saved;
+        if (!saved) {
+            throw new ServiceException("创建生产批次失败");
+        }
+        return true;
     }
 
     /**
@@ -93,9 +115,36 @@ public class ProductionBatchServiceImpl extends ServiceImpl<ProductionBatchMappe
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateProductionBatch(ProductionBatch productionBatch) {
-        boolean updated = updateById(productionBatch);
-        return updated;
+        if (productionBatch == null || productionBatch.getBatchId() == null || productionBatch.getBatchQty() == null) {
+            throw new ServiceException("批次ID和批次数量不能为空");
+        }
+        // 进行sql行锁
+        ProductionBatch locked = productionBatchMapper.selectBatchForUpdate(productionBatch.getBatchId());
+        if (locked == null) {
+            throw new ServiceException("生产批次不存在，无法修改");
+        }
+        Long orderLineId = locked.getOrderLineId();
+        if (productionBatch.getOrderLineId() != null && !productionBatch.getOrderLineId().equals(orderLineId)) {
+            throw new ServiceException("不允许修改来源订单行");
+        }
+        long oldQty = locked.getBatchQty() == null ? 0L : locked.getBatchQty();
+        long newQty = productionBatch.getBatchQty();
+        long delta = newQty - oldQty;
+        if (delta > 0) {
+            int affected = orderLineAllocationMapper.allocateQty(orderLineId, delta);
+            if (affected != 1) {
+                throw new ServiceException("订单行可用数量不足，无法增加批次数量");
+            }
+        } else if (delta < 0) {
+            int affected = orderLineAllocationMapper.releaseQty(orderLineId, delta);
+            if (affected != 1) {
+                throw new ServiceException("释放订单行占用失败");
+            }
+        }
+        productionBatch.setOrderLineId(orderLineId);
+        return updateById(productionBatch);
     }
 
     /**
@@ -105,11 +154,15 @@ public class ProductionBatchServiceImpl extends ServiceImpl<ProductionBatchMappe
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteProductionBatchByBatchIds(String[] batchIds) {
         if (batchIds == null || batchIds.length == 0) {
             return false;
         }
-        return removeByIds(Arrays.asList(batchIds));
+        for (String batchId : batchIds) {
+            deleteOneWithRelease(batchId);
+        }
+        return true;
     }
 
     /**
@@ -119,7 +172,72 @@ public class ProductionBatchServiceImpl extends ServiceImpl<ProductionBatchMappe
      * @return 是否成功
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteProductionBatchByBatchId(String batchId) {
+        return deleteOneWithRelease(batchId);
+    }
+
+    @Override
+    public boolean release(String batchId) {
+        ProductionBatch productionBatch = lambdaQuery()
+                .select(ProductionBatch::getOrderLineId, ProductionBatch::getStatus)
+                .eq(ProductionBatch::getBatchId, batchId)
+                .last("limit 1").one();
+        OrderLine orderLine = Db.lambdaQuery(OrderLine.class)
+                .select(OrderLine::getStatus)
+                .eq(OrderLine::getOrderLineId, productionBatch.getOrderLineId())
+                .last("limit 1").one();
+        String status = productionBatch.getStatus();
+        if (orderLine.getStatus().equals(StatusConstants.NEW_ORDER_LINE)) {
+            throw new ServiceException("订单行未发布");
+        }
+        if (status.equals(StatusConstants.IN_PROCESS_PRODUCTION_BATCH)) {
+            throw new ServiceException("该批次在执行中");
+        }
+        if (status.equals(StatusConstants.DONE_PRODUCTION_BATCH)) {
+            throw new ServiceException("该批次已完成");
+        }
+        return lambdaUpdate().set(ProductionBatch::getStatus, StatusConstants.RELEASED_PRODUCTION_BATCH)
+                .eq(ProductionBatch::getBatchId, batchId)
+                .update();
+    }
+
+    @Override
+    public boolean cancelRelease(String batchId) {
+        ProductionBatch productionBatch = lambdaQuery()
+                .select(ProductionBatch::getStatus)
+                .eq(ProductionBatch::getBatchId, batchId)
+                .last("limit 1").one();
+        String status = productionBatch.getStatus();
+        if (status.equals(StatusConstants.IN_PROCESS_PRODUCTION_BATCH)) {
+            throw new ServiceException("该批次在执行中");
+        }
+        if (status.equals(StatusConstants.DONE_PRODUCTION_BATCH)) {
+            throw new ServiceException("该批次已完成");
+        }
+        return lambdaUpdate().set(ProductionBatch::getStatus, StatusConstants.PLANNED_PRODUCTION_BATCH)
+                .eq(ProductionBatch::getBatchId, batchId)
+                .update();
+    }
+
+    private boolean deleteOneWithRelease(String batchId) {
+        if (batchId == null) {
+            return false;
+        }
+        // sql主键行锁
+        ProductionBatch locked = productionBatchMapper.selectBatchForUpdate(batchId);
+        if (locked == null) {
+            return false;
+        }
+        Long orderLineId = locked.getOrderLineId();
+        long batchQty = locked.getBatchQty() == null ? 0L : locked.getBatchQty();
+        if (batchQty != 0L) {
+            // 减去该批次数量
+            int affected = orderLineAllocationMapper.releaseQty(orderLineId, -batchQty);
+            if (affected != 1) {
+                throw new ServiceException("释放订单行占用失败");
+            }
+        }
         return removeById(batchId);
     }
 

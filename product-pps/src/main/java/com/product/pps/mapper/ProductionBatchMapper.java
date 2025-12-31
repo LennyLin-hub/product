@@ -6,6 +6,7 @@ import com.product.domain.dto.BatchSearchDTO;
 import com.product.domain.entity.ProductionBatch;
 import com.product.domain.vo.ProductionBatchVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 生产批次（订单行拆批）Mapper接口，基于 MyBatis-Plus
@@ -16,4 +17,6 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ProductionBatchMapper extends BaseMapper<ProductionBatch> {
     Page<ProductionBatchVO> selectProductionBatchPage(Page<ProductionBatchVO> page, BatchSearchDTO batchSearchDTO);
+
+    ProductionBatch selectBatchForUpdate(@Param("batchId") String batchId);
 }

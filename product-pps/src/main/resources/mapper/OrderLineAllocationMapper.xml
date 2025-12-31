@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.product.pps.mapper.OrderLineAllocationMapper">
+
+    <update id="allocateQty">
+        update order_line
+        set allocated_qty = allocated_qty + #{batchQty}
+        where order_line_id = #{orderLineId}
+          and allocated_qty + #{batchQty} &lt;= qty
+    </update>
+
+    <update id="releaseQty">
+        update order_line
+        set allocated_qty = allocated_qty + #{batchQty}
+        where order_line_id = #{orderLineId}
+    </update>
+</mapper>

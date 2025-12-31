@@ -62,6 +62,9 @@ public class SysDictData extends BaseEntity {
     @Excel(name = "是否默认", readConverterExp = "Y=是,N=否")
     private String isDefault;
 
+    @Excel(name = "是否只读", readConverterExp = "0=只读,1=读写")
+    private String isReadonly;
+
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     private String status;

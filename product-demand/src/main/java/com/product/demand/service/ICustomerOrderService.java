@@ -79,4 +79,8 @@ public interface ICustomerOrderService extends IService<CustomerOrder> {
      * @return 是否成功
      */
     boolean deleteCustomerOrderByOrderId(String orderId);
+
+    boolean check(String orderId);
+
+    boolean cancelCheck(String orderId);
 }

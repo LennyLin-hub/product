@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.product.common.annotation.BizIdPrefix;
+import com.product.common.constant.StatusConstants;
+import com.product.common.exception.ServiceException;
 import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
 import com.product.demand.mapper.CustomerOrderMapper;
@@ -80,10 +82,10 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         if (StringUtils.isEmpty(customerOrder.getOrderId())) {
             customerOrder.setOrderId(buildBizId(customerOrder));
         }
-        boolean saved = save(customerOrder);
-        if (saved) {
-            saveOrUpdateOrderLine(customerOrder);
+        if (StringUtils.isEmpty(customerOrder.getStatus())) {
+            customerOrder.setStatus(StatusConstants.NEW_CUSTOMER_ORDER);
         }
+        boolean saved = save(customerOrder);
         return saved;
     }
 
@@ -116,10 +118,6 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
     @Override
     public boolean updateCustomerOrder(CustomerOrder customerOrder) {
         boolean updated = updateById(customerOrder);
-        if (updated) {
-            baseMapper.deleteOrderLineByOrderId(customerOrder.getOrderId());
-            saveOrUpdateOrderLine(customerOrder);
-        }
         return updated;
     }
 
@@ -150,6 +148,40 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         return removeById(orderId);
     }
 
+    @Override
+    public boolean check(String orderId) {
+        CustomerOrder customerOrder = lambdaQuery()
+                .select(CustomerOrder::getStatus)
+                .eq(CustomerOrder::getOrderId, orderId)
+                .last("limit 1").one();
+        String status = customerOrder.getStatus();
+        if (status.equals(StatusConstants.IN_PRODUCTION_CUSTOMER_ORDER)) {
+            throw new ServiceException("该订单已投入生产");
+        } else if (status.equals(StatusConstants.DONE_CUSTOMER_ORDER)) {
+            throw new ServiceException(("该订单已经完成"));
+        }
+        return lambdaUpdate().set(CustomerOrder::getStatus, StatusConstants.CONFIRMED_CUSTOMER_ORDER)
+                .eq(CustomerOrder::getOrderId, orderId)
+                .update();
+    }
+
+    @Override
+    public boolean cancelCheck(String orderId) {
+        CustomerOrder customerOrder = lambdaQuery()
+                .select(CustomerOrder::getStatus)
+                .eq(CustomerOrder::getOrderId, orderId)
+                .last("limit 1").one();
+        String status = customerOrder.getStatus();
+        if (status.equals(StatusConstants.IN_PRODUCTION_CUSTOMER_ORDER)) {
+            throw new ServiceException("该订单已投入生产");
+        } else if (status.equals(StatusConstants.DONE_CUSTOMER_ORDER)) {
+            throw new ServiceException(("该订单已经完成"));
+        }
+        return lambdaUpdate().set(CustomerOrder::getStatus, StatusConstants.NEW_CUSTOMER_ORDER)
+                .eq(CustomerOrder::getOrderId, orderId)
+                .update();
+    }
+
     /**
      * 构建查询条件
      */
@@ -160,21 +192,6 @@ public class CustomerOrderServiceImpl extends ServiceImpl<CustomerOrderMapper, C
         wrapper.eq(customerOrder.getPriority() != null, CustomerOrder::getPriority, customerOrder.getPriority());
         wrapper.eq(customerOrder.getStatus() != null, CustomerOrder::getStatus, customerOrder.getStatus());
         return wrapper;
-    }
-
-    /**
-     * 处理子表数据
-     */
-    private void saveOrUpdateOrderLine(CustomerOrder customerOrder) {
-        List<com.product.domain.entity.OrderLine> orderLineList = customerOrder.getOrderLineList();
-        String orderId = customerOrder.getOrderId();
-        if (CollectionUtils.isEmpty(orderLineList)) {
-            return;
-        }
-        orderLineList.forEach(item -> {
-            item.setOrderId(orderId);
-        });
-        baseMapper.batchOrderLine(orderLineList);
     }
 
     private String buildBizId(Object entity) {

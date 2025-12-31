@@ -78,4 +78,8 @@ public interface IOrderLineService extends IService<OrderLine> {
      * @return 是否成功
      */
     boolean deleteOrderLineByOrderLineId(Long orderLineId);
+
+    boolean release(String orderLineId);
+
+    boolean cancelRelease(String orderLineId);
 }

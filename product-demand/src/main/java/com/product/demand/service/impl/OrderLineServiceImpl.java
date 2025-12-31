@@ -3,11 +3,15 @@ package com.product.demand.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.product.common.annotation.BizIdPrefix;
+import com.product.common.constant.StatusConstants;
+import com.product.common.exception.ServiceException;
 import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
 import com.product.demand.mapper.OrderLineMapper;
 import com.product.demand.service.IOrderLineService;
+import com.product.domain.entity.CustomerOrder;
 import com.product.domain.entity.OrderLine;
 import com.product.domain.entity.ProductionBatch;
 import org.apache.commons.collections4.CollectionUtils;
@@ -75,10 +79,10 @@ public class OrderLineServiceImpl extends ServiceImpl<OrderLineMapper, OrderLine
         if (StringUtils.isEmpty(orderLine.getOrderId())) {
             orderLine.setOrderId(buildBizId(orderLine));
         }
-        boolean saved = save(orderLine);
-        if (saved) {
-            saveOrUpdateProductionBatch(orderLine);
+        if (StringUtils.isEmpty(orderLine.getStatus())) {
+            orderLine.setStatus(StatusConstants.NEW_ORDER_LINE);
         }
+        boolean saved = save(orderLine);
         return saved;
     }
 
@@ -118,10 +122,6 @@ public class OrderLineServiceImpl extends ServiceImpl<OrderLineMapper, OrderLine
     @Override
     public boolean updateOrderLine(OrderLine orderLine) {
         boolean updated = updateById(orderLine);
-        if (updated) {
-            baseMapper.deleteProductionBatchByBatchId(orderLine.getOrderLineId());
-            saveOrUpdateProductionBatch(orderLine);
-        }
         return updated;
     }
 
@@ -152,6 +152,49 @@ public class OrderLineServiceImpl extends ServiceImpl<OrderLineMapper, OrderLine
         return removeById(orderLineId);
     }
 
+    @Override
+    public boolean release(String orderLineId) {
+        OrderLine orderLine = lambdaQuery().select(OrderLine::getOrderId, OrderLine::getStatus)
+                .eq(OrderLine::getOrderLineId, orderLineId)
+                .last("limit 1").one();
+        String status = orderLine.getStatus();
+        System.out.println(orderLine.getOrderId());
+        CustomerOrder customerOrder = Db.lambdaQuery(CustomerOrder.class)
+                .select(CustomerOrder::getStatus)
+                .eq(CustomerOrder::getOrderId, orderLine.getOrderId())
+                .last("limit 1")
+                .one();
+        if (customerOrder.getStatus().equals(StatusConstants.NEW_CUSTOMER_ORDER)) {
+            throw new ServiceException("订单未确认");
+        }
+        if (status.equals(StatusConstants.IN_PRODUCTION_ORDER_LINE)) {
+            throw new ServiceException("该订单行已投入生产");
+        }
+        if (status.equals(StatusConstants.DONE_ORDER_LINE)) {
+            throw new ServiceException(("该订单行已完成"));
+        }
+        return lambdaUpdate().set(OrderLine::getStatus, StatusConstants.RELEASED_ORDER_LINE)
+                .eq(OrderLine::getOrderLineId, orderLineId)
+                .update();
+    }
+
+    @Override
+    public boolean cancelRelease(String orderLineId) {
+        OrderLine orderLine = lambdaQuery().select(OrderLine::getOrderId, OrderLine::getStatus)
+                .eq(OrderLine::getOrderLineId, orderLineId)
+                .last("limit 1").one();
+        String status = orderLine.getStatus();
+        if (status.equals(StatusConstants.IN_PRODUCTION_ORDER_LINE)) {
+            throw new ServiceException("该订单行已投入生产");
+        }
+        if (status.equals(StatusConstants.DONE_ORDER_LINE)) {
+            throw new ServiceException(("该订单行已完成"));
+        }
+        return lambdaUpdate().set(OrderLine::getStatus, StatusConstants.NEW_ORDER_LINE)
+                .eq(OrderLine::getOrderLineId, orderLineId)
+                .update();
+    }
+
     /**
      * 构建查询条件
      */
@@ -165,20 +208,5 @@ public class OrderLineServiceImpl extends ServiceImpl<OrderLineMapper, OrderLine
         wrapper.eq(orderLine.getQty() != null, OrderLine::getQty, orderLine.getQty());
         wrapper.eq(orderLine.getStatus() != null, OrderLine::getStatus, orderLine.getStatus());
         return wrapper;
-    }
-
-    /**
-     * 处理子表数据
-     */
-    private void saveOrUpdateProductionBatch(OrderLine orderLine) {
-        List<ProductionBatch> productionBatchList = orderLine.getProductionBatchList();
-        Long orderLineId = orderLine.getOrderLineId();
-        if (CollectionUtils.isEmpty(productionBatchList)) {
-            return;
-        }
-        productionBatchList.forEach(item -> {
-            item.setOrderLineId(orderLineId);
-        });
-        baseMapper.batchProductionBatch(productionBatchList);
     }
 }

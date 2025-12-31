@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
 import com.product.common.utils.PageUtils;
-import com.product.common.utils.ServletUtils;
 import com.product.core.controller.BaseController;
 import com.product.core.utils.ExcelUtil;
 import com.product.demand.service.ICustomerOrderService;
@@ -37,7 +36,6 @@ public class CustomerOrderController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo list(ServletRequest request, CustomerOrder customerOrder) {
         Page<CustomerOrderVO> page = PageUtils.buildPage();
-        System.out.println(ServletUtils.getParams(request).entrySet());
         return getDataTable(customerOrderService.selectCustomerOrderPage(page, customerOrder));
     }
 
@@ -103,5 +101,21 @@ public class CustomerOrderController extends BaseController {
     @DeleteMapping("/{orderIds}")
     public AjaxResult remove(@PathVariable String[] orderIds) {
         return toAjax(customerOrderService.deleteCustomerOrderByOrderIds(orderIds));
+    }
+
+    /**
+     * 确认订单
+     */
+    @PutMapping("/check/{orderId}")
+    public AjaxResult check(@PathVariable("orderId") String orderId) {
+        return toAjax(customerOrderService.check(orderId));
+    }
+
+    /**
+     * 取消确认订单
+     */
+    @PutMapping("/cancelCheck/{orderId}")
+    public AjaxResult cancelCheck(@PathVariable("orderId") String orderId) {
+        return toAjax(customerOrderService.cancelCheck(orderId));
     }
 }

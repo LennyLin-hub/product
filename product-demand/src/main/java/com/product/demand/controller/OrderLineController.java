@@ -107,4 +107,20 @@ public class OrderLineController extends BaseController {
     public AjaxResult remove(@PathVariable String[] orderLineIds) {
         return toAjax(orderLineService.deleteOrderLineByOrderLineIds(orderLineIds));
     }
+
+    /**
+     * 释放订单行
+     */
+    @PutMapping("/release/{orderLineId}")
+    public AjaxResult release(@PathVariable("orderLineId") String orderLineId) {
+        return toAjax(orderLineService.release(orderLineId));
+    }
+
+    /**
+     * 取消释放订单行
+     */
+    @PutMapping("/cancelRelease/{orderLineId}")
+    public AjaxResult cancelRelease(@PathVariable("orderLineId") String orderLineId) {
+        return toAjax(orderLineService.cancelRelease(orderLineId));
+    }
 }

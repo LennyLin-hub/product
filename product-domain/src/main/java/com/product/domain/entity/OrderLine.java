@@ -43,6 +43,10 @@ public class OrderLine{
     @TableField(value = "qty")
     private Long qty;
 
+    @Excel(name = "已拆批数量")
+    @TableField(value = "allocated_qty")
+    private Long allocatedQty;
+
     /** 订单行状态 */
     @Excel(name = "订单行状态", readConverterExp = "NEW=未释放,RELEASE=已释放,IN_PRODUCTION=生产中,DONE=已完成")
     @TableField(value = "status")

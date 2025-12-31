@@ -7,6 +7,7 @@ import com.product.domain.entity.SysDictData;
 import com.product.system.mapper.SysDictDataMapper;
 import com.product.system.service.ISysDictDataService;
 import com.product.core.utils.DictUtils;
+import com.product.common.exception.ServiceException;
 import com.product.common.utils.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -79,6 +80,16 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
 
     @Override
     public boolean updateDictData(SysDictData dictData) {
+        if (dictData == null || dictData.getDictCode() == null) {
+            throw new ServiceException("字典编码不能为空");
+        }
+        SysDictData origin = selectDictDataById(dictData.getDictCode());
+        if (origin != null
+                && "0".equals(origin.getIsReadonly())
+                && StringUtils.hasText(dictData.getStatus())
+                && !StringUtils.equals(dictData.getStatus(), origin.getStatus())) {
+            throw new ServiceException("该字典为只读，状态不可修改");
+        }
         boolean isSuccess = updateById(dictData);
         if (isSuccess)
         {
@@ -102,6 +113,7 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
                 SysDictData::getDictCode, SysDictData::getDictSort, SysDictData::getDictLabel,
                 SysDictData::getDictValue, SysDictData::getDictType,
                 SysDictData::getCssClass, SysDictData::getListClass, SysDictData::getIsDefault,
+                SysDictData::getIsReadonly,
                 SysDictData::getStatus, SysDictData::getCreateTime
         );
         return wrapper;

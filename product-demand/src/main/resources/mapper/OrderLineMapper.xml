@@ -8,20 +8,20 @@
     <select id="selectProductionBatchList" resultType="com.product.domain.entity.ProductionBatch">
         select batch_id, order_line_id, batch_qty, status, planned_start, planned_end, create_time, update_time
         from production_batch
-        where batch_id = #{batchId}
+        where order_line_id = #{orderLineId}
     </select>
 
     <!-- 批量删除子表 -->
     <delete id="deleteProductionBatchByBatchIds" parameterType="java.lang.String">
-        delete from production_batch where batch_id in
-        <foreach item="batchId" collection="array" open="(" separator="," close=")">
-            #{batchId}
+        delete from production_batch where order_line_id in
+        <foreach item="orderLineId" collection="orderLineIds" open="(" separator="," close=")">
+            #{orderLineId}
         </foreach>
     </delete>
 
     <!-- 根据主表主键删除子表 -->
     <delete id="deleteProductionBatchByBatchId" parameterType="java.lang.Long">
-        delete from production_batch where batch_id = #{batchId}
+        delete from production_batch where order_line_id = #{orderLineId}
     </delete>
 
     <!-- 批量新增子表数据 -->
