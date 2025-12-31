@@ -22,4 +22,16 @@ public class StatusConstants {
     public static final String IN_PROCESS_PRODUCTION_BATCH = "IN_PROCESS";
     public static final String DONE_PRODUCTION_BATCH = "DONE";
 
+    public static final String READY_OPERATION_TASK = "READY";
+    public static final String SCHEDULED_OPERATION_TASK = "SCHEDULED";
+    public static final String RUNNING_OPERATION_TASK = "RUNNING";
+    public static final String PAUSED_OPERATION_TASK = "PAUSED";
+    public static final String DONE_OPERATION_TASK = "DONE";
+    public static final String CANCELLED_OPERATION_TASK = "CANCELLED";
+
+    public static final String AVAILABLE_RESOURCE_STATUS ="AVAILABLE";
+    public static final String BUSY_RESOURCE_STATUS ="BUSY";
+    public static final String DOWN_RESOURCE_STATUS ="DOWN";
+    public static final String MAINTENANCE_RESOURCE_STATUS ="MAINTENANCE";
+    public static final String OFFSHIFT_RESOURCE_STATUS ="OFFSHIFT";
 }

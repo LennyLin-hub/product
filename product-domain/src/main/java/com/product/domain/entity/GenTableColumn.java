@@ -387,11 +387,4 @@ public class GenTableColumn extends BaseEntity
             return this.columnComment;
         }
     }
-
-    public static void main(String[] args) {
-        GenTableColumn genTableColumn = new GenTableColumn();
-        genTableColumn.setColumnComment("订单状态（NEW：未确认 CONFIRMED：已确认 IN_PRODUCTION：生产中 DONE：已完成）");
-        String s = genTableColumn.readConverterExp();
-        System.out.println(s);
-    }
 }

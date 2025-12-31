@@ -9,6 +9,7 @@ import com.product.core.utils.ExcelUtil;
 import com.product.domain.dto.BatchSearchDTO;
 import com.product.domain.entity.ProductionBatch;
 import com.product.domain.vo.ProductionBatchVO;
+import com.product.pps.service.IOperationTaskService;
 import com.product.pps.service.IProductionBatchService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,8 @@ public class ProductionBatchController extends BaseController {
     @Autowired
     private IProductionBatchService productionBatchService;
 
+    @Autowired
+    private IOperationTaskService operationTaskService;
     /**
      * 查询生产批次（订单行拆批）列表
      */
@@ -117,5 +120,21 @@ public class ProductionBatchController extends BaseController {
     @PutMapping("/cancelRelease/{batchId}")
     public AjaxResult cancelRelease(@PathVariable("batchId") String batchId) {
         return toAjax(productionBatchService.cancelRelease(batchId));
+    }
+
+    /**
+     * 生成生产任务
+     */
+    @PostMapping("/generateTask")
+    public AjaxResult generateTask(@RequestBody List<String> batchIds) {
+        return operationTaskService.generateTask(batchIds);
+    }
+
+    /**
+     * 重新生成生产任务
+     */
+    @PutMapping("/retryGenerateTask/{batchId}")
+    public AjaxResult retryGenerateTask(@PathVariable String batchId) {
+        return operationTaskService.retryGenerateTask(batchId);
     }
 }

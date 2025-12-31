@@ -24,6 +24,7 @@
         <module>product-cache</module>
         <module>product-demand</module>
         <module>product-pps</module>
+        <module>product-master</module>
     </modules>
 
     <url/>
@@ -120,6 +121,11 @@
             <dependency>
                 <groupId>com.product</groupId>
                 <artifactId>product-pps</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-master</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- 第三方依赖版本管理 -->

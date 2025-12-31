@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.product.master.resource.mapper.MachineMapper">
+    <resultMap id="MachineResouceMap" type="com.product.domain.vo.MachineResourceVO">
+        <id property="resourceId" column="resource_id"></id>
+        <result property="calendarId" column="calendar_id"></result>
+        <result property="calendarName" column="calendar_name"></result>
+        <result property="tonnage" column="tonnage"></result>
+        <result property="name" column="name"></result>
+    </resultMap>
+
+    <sql id="selectMachineResourceVO">
+        select r.resource_id, r.name, c.calendar_id, c.calendar_name, m.tonnage
+            from resource r
+        left join machine m
+        on m.machine_id = r.resource_id
+        left join calendar c
+            on c.calendar_id = r.calendar_id
+    </sql>
+
+    <!-- MyBatis-Plus 已提供通用 CRUD，这里按需补充自定义 SQL -->
+    <select id="selectMachinePage" resultMap="MachineResouceMap">
+        <include refid="selectMachineResourceVO"></include>
+    </select>
+</mapper>
