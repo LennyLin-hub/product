@@ -12,6 +12,7 @@ import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
 import com.product.domain.entity.OperationTask;
 import com.product.domain.entity.ProductionBatch;
+import com.product.domain.entity.TaskDependency;
 import com.product.pps.dto.OperationTaskError;
 import com.product.pps.mapper.OperationTaskMapper;
 import com.product.pps.service.IOperationTaskService;
@@ -154,6 +155,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
                 .list();
         List<OperationTaskError> errors = new ArrayList<>();
         List<OperationTask> operationTasks = new ArrayList<>();
+        List<TaskDependency> taskDependencies = new ArrayList<>();
         Map<String, ProductionBatch> batchMap = productionBatches.stream()
                 .collect(Collectors.toMap(ProductionBatch::getBatchId, item -> item, (a, b) -> a));
         List<String> list = lambdaQuery()
@@ -190,9 +192,10 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
             }
             LocalDateTime baseTime = LocalDateTime.now();
             long cumulativeMinutes = 0; // 累计时长（分钟）
-
+            List<OperationTask> batchTasks = new ArrayList<>();
             for (int i = 0; i < 3;) {
                 OperationTask operationTask = new OperationTask();
+                operationTask.setTaskId(buildBizId(operationTask));
                 operationTask.setBatchId(item.getBatchId());
                 operationTask.setStatus(StatusConstants.READY_OPERATION_TASK);
                 operationTask.setOpCode(OperationTaskConstants.OP_CODE.get(i));
@@ -204,11 +207,25 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
                 cumulativeMinutes += operationTask.getStdDurationMin();
                 // 添加到列表
                 operationTasks.add(operationTask);
+                batchTasks.add(operationTask);
+            }
+            if (batchTasks.size() >= 3) {
+                TaskDependency setupToInject = new TaskDependency();
+                setupToInject.setPreTaskId(batchTasks.get(0).getTaskId());
+                setupToInject.setPostTaskId(batchTasks.get(1).getTaskId());
+                taskDependencies.add(setupToInject);
+                TaskDependency injectToPost = new TaskDependency();
+                injectToPost.setPreTaskId(batchTasks.get(1).getTaskId());
+                injectToPost.setPostTaskId(batchTasks.get(2).getTaskId());
+                taskDependencies.add(injectToPost);
             }
         }
         // 批量保存工序任务
         if (!operationTasks.isEmpty()) {
             saveBatch(operationTasks);
+        }
+        if (!taskDependencies.isEmpty()) {
+            Db.saveBatch(taskDependencies);
         }
 
         if (errors.isEmpty()) {
@@ -230,7 +247,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
     @Transactional(rollbackFor = Exception.class)
     public AjaxResult retryGenerateTask(String batchId) {
         List<OperationTask> tasks = lambdaQuery()
-                .select(OperationTask::getStatus)
+                .select(OperationTask::getStatus, OperationTask::getTaskId)
                 .eq(OperationTask::getBatchId, batchId)
                 .list();
         boolean hasNotAllowed = tasks.stream().anyMatch(item ->
@@ -241,7 +258,18 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
             errors.add(new OperationTaskError(batchId, "仅允许READY或SCHEDULED状态的任务重新生成"));
             return AjaxResult.error("重新生成失败", errors);
         }
+        List<String> taskIds = tasks.stream()
+                .map(OperationTask::getTaskId)
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.toList());
         lambdaUpdate().eq(OperationTask::getBatchId, batchId).remove();
+        if (CollectionUtils.isNotEmpty(taskIds)) {
+            Db.lambdaUpdate(TaskDependency.class)
+                    .in(TaskDependency::getPreTaskId, taskIds)
+                    .or()
+                    .in(TaskDependency::getPostTaskId, taskIds)
+                    .remove();
+        }
         ProductionBatch productionBatch = Db.lambdaQuery(ProductionBatch.class)
                 .select(ProductionBatch::getBatchId, ProductionBatch::getStatus)
                 .eq(ProductionBatch::getBatchId, batchId)
@@ -257,8 +285,10 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
         LocalDateTime baseTime = LocalDateTime.now();
         long cumulativeMinutes = 0; // 累计时长（分钟）
         List<OperationTask> operationTasks = new ArrayList<>();
+        List<TaskDependency> taskDependencies = new ArrayList<>();
         for (int i = 0; i < 3;) {
             OperationTask operationTask = new OperationTask();
+            operationTask.setTaskId(buildBizId(operationTask));
             operationTask.setBatchId(batchId);
             operationTask.setStatus(StatusConstants.READY_OPERATION_TASK);
             operationTask.setOpCode(OperationTaskConstants.OP_CODE.get(i));
@@ -272,6 +302,17 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
             operationTasks.add(operationTask);
         }
         saveBatch(operationTasks);
+        if (operationTasks.size() >= 3) {
+            TaskDependency setupToInject = new TaskDependency();
+            setupToInject.setPreTaskId(operationTasks.get(0).getTaskId());
+            setupToInject.setPostTaskId(operationTasks.get(1).getTaskId());
+            taskDependencies.add(setupToInject);
+            TaskDependency injectToPost = new TaskDependency();
+            injectToPost.setPreTaskId(operationTasks.get(1).getTaskId());
+            injectToPost.setPostTaskId(operationTasks.get(2).getTaskId());
+            taskDependencies.add(injectToPost);
+            Db.saveBatch(taskDependencies);
+        }
         return AjaxResult.success();
     }
 

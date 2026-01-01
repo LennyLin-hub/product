@@ -22,7 +22,7 @@ public interface IMachineService extends IService<Machine> {
      * @param machineId 注塑机扩展信息主键
      * @return 注塑机扩展信息
      */
-    Machine selectMachineByMachineId(String machineId);
+    MachineResourceVO selectMachineByMachineId(String machineId);
 
     /**
      * 查询注塑机扩展信息列表
@@ -39,7 +39,7 @@ public interface IMachineService extends IService<Machine> {
      * @param machineResource 查询条件
      * @return 分页结果
      */
-    Page<Machine> selectMachinePage(Page<MachineResourceVO> page, MachineResource machineResource);
+    Page<MachineResourceVO> selectMachinePage(Page<MachineResourceVO> page, MachineResource machineResource);
 
     /**
      * 新增注塑机扩展信息
@@ -60,10 +60,10 @@ public interface IMachineService extends IService<Machine> {
     /**
      * 修改注塑机扩展信息
      *
-     * @param machine 注塑机扩展信息
+     * @param machineResource 注塑机扩展信息
      * @return 是否成功
      */
-    boolean updateMachine(Machine machine);
+    boolean updateMachine(MachineResource machineResource);
 
     /**
      * 批量删除注塑机扩展信息
@@ -80,4 +80,10 @@ public interface IMachineService extends IService<Machine> {
      * @return 是否成功
      */
     boolean deleteMachineByMachineId(String machineId);
+
+    boolean down(String machineId);
+
+    boolean maintenance(String machineId);
+
+    boolean restore(String machineId);
 }

@@ -11,6 +11,12 @@ import lombok.Data;
  */
 @Data
 public class MachineResourceVO extends Resource {
+    private String machineId;
     private Integer tonnage;
+    private Integer defaultSetupTimeMin;
     private String calendarName;
+    // 是否离班
+    private boolean isOffShift;
+    // 前端展示状态
+    private String effectiveStatus;
 }
