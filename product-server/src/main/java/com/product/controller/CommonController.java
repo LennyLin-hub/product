@@ -4,7 +4,7 @@ import com.product.common.config.ProductConfig;
 import com.product.common.core.result.AjaxResult;
 import com.product.common.utils.file.FileUploadUtils;
 import com.product.common.utils.file.FileUtils;
-import com.product.config.ServerConfig;
+import com.product.framework.config.ServerConfig;
 import com.product.core.controller.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
