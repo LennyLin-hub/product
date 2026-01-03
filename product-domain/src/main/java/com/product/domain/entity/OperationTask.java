@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 工序任务对象 operation_task
@@ -62,4 +63,6 @@ public class OperationTask  extends BaseEntity {
     @TableField(value = "status")
     private String status;
 
+    @TableField(exist = false)
+    private List<String> statusList;
 }

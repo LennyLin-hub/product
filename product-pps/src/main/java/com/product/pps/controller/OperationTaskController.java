@@ -44,6 +44,12 @@ public class OperationTaskController extends BaseController {
         return getDataTable(operationTaskService.selectOperationTaskPage(page, operationTask));
     }
 
+    @GetMapping("/listReadyAndScheduled")
+    public TableDataInfo listReadyAndScheduled(OperationTask operationTask) {
+        Page<OperationTask> page = PageUtils.buildPage();
+        return getDataTable(operationTaskService.selectReadyAndScheduledPage(page, operationTask));
+    }
+
     /**
      * 导出工序任务列表
      */

@@ -6,7 +6,9 @@ import com.product.common.core.page.TableDataInfo;
 import com.product.common.core.result.AjaxResult;
 import com.product.core.utils.ExcelUtil;
 import com.product.common.utils.PageUtils;
+import com.product.domain.dto.TaskAssignmentDTO;
 import com.product.domain.entity.TaskAssignment;
+import com.product.domain.vo.TaskAssignmentVO;
 import com.product.pps.service.ITaskAssignmentService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +42,7 @@ public class TaskAssignmentController extends BaseController {
      */
     @GetMapping("/list")
     public TableDataInfo list(TaskAssignment taskAssignment) {
-        Page<TaskAssignment> page = PageUtils.buildPage();
+        Page<TaskAssignmentVO> page = PageUtils.buildPage();
         return getDataTable(taskAssignmentService.selectTaskAssignmentPage(page, taskAssignment));
     }
 
@@ -106,5 +108,21 @@ public class TaskAssignmentController extends BaseController {
     @DeleteMapping("/{assignmentIds}")
     public AjaxResult remove(@PathVariable Long[] assignmentIds) {
         return toAjax(taskAssignmentService.deleteTaskAssignmentByAssignmentIds(assignmentIds));
+    }
+
+    /**
+     * 一键排程
+     */
+    @PostMapping("/schedule")
+    public AjaxResult schedule(@RequestBody TaskAssignmentDTO taskAssignmentDTO) {
+        return toAjax(taskAssignmentService.schedule(taskAssignmentDTO));
+    }
+
+    /**
+     * 全部排程
+     */
+    @PostMapping("/scheduleAll")
+    public AjaxResult scheduleAll(@RequestBody TaskAssignmentDTO taskAssignmentDTO) {
+        return toAjax(taskAssignmentService.scheduleAll(taskAssignmentDTO));
     }
 }

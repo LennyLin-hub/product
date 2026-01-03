@@ -25,6 +25,7 @@
         <module>product-demand</module>
         <module>product-pps</module>
         <module>product-master</module>
+        <module>product-execute</module>
     </modules>
 
     <url/>
@@ -126,6 +127,11 @@
             <dependency>
                 <groupId>com.product</groupId>
                 <artifactId>product-master</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.product</groupId>
+                <artifactId>product-execute</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- 第三方依赖版本管理 -->

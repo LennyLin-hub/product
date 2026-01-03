@@ -2,8 +2,11 @@ package com.product.pps.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import java.util.List;
+import com.product.domain.dto.TaskAssignmentDTO;
 import com.product.domain.entity.TaskAssignment;
+import com.product.domain.vo.TaskAssignmentVO;
+
+import java.util.List;
 
 /**
  * 派工/排程结果Service接口（MyBatis-Plus）
@@ -36,7 +39,7 @@ public interface ITaskAssignmentService extends IService<TaskAssignment> {
      * @param taskAssignment 查询条件
      * @return 分页结果
      */
-    Page<TaskAssignment> selectTaskAssignmentPage(Page<TaskAssignment> page, TaskAssignment taskAssignment);
+    Page<TaskAssignmentVO> selectTaskAssignmentPage(Page<TaskAssignmentVO> page, TaskAssignment taskAssignment);
 
     /**
      * 新增派工/排程结果
@@ -77,4 +80,8 @@ public interface ITaskAssignmentService extends IService<TaskAssignment> {
      * @return 是否成功
      */
     boolean deleteTaskAssignmentByAssignmentId(Long assignmentId);
+
+    boolean schedule(TaskAssignmentDTO taskAssignmentDTO);
+
+    boolean scheduleAll(TaskAssignmentDTO taskAssignmentDTO);
 }

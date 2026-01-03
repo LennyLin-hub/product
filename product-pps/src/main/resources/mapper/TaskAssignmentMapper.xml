@@ -3,5 +3,55 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.product.pps.mapper.TaskAssignmentMapper">
+    <resultMap id="TaskAssignmentMap" type="com.product.domain.vo.TaskAssignmentVO">
+        <id property="assignmentId" column="assignment_id"></id>
+        <result property="taskId" column="task_id"></result>
+        <result property="machineId" column="machine_id"></result>
+        <result property="plannedStart" column="planned_start"></result>
+        <result property="plannedEnd" column="planned_end"></result>
+        <result property="sequenceOnResource" column="sequence_on_resource"></result>
+        <result property="batchId" column="batch_id"></result>
+        <result property="opCode" column="op_code"></result>
+    </resultMap>
+
     <!-- MyBatis-Plus 已提供通用 CRUD，这里按需补充自定义 SQL -->
+    <select id="selectMachineNextTime" resultType="java.time.LocalDateTime">
+        SELECT MAX(a.planned_end)
+        FROM task_assignment a
+        INNER JOIN operation_task t ON t.task_id = a.task_id
+        WHERE a.machine_id = #{machineId}
+          AND t.status IN
+        <foreach collection="statusList" item="status" open="(" separator="," close=")">
+            #{status}
+        </foreach>
+    </select>
+    <select id="selectTaskAssignmentPage" resultMap="TaskAssignmentMap">
+        SELECT a.assignment_id,
+               a.task_id,
+               a.machine_id,
+               a.planned_start,
+               a.planned_end,
+               a.sequence_on_resource,
+               t.batch_id,
+               t.op_code
+        FROM task_assignment a
+        LEFT JOIN operation_task t ON t.task_id = a.task_id
+        <where>
+            <if test="taskAssignment != null and taskAssignment.taskId != null and taskAssignment.taskId != ''">
+                AND a.task_id = #{taskAssignment.taskId}
+            </if>
+            <if test="taskAssignment != null and taskAssignment.machineId != null and taskAssignment.machineId != ''">
+                AND a.machine_id = #{taskAssignment.machineId}
+            </if>
+            <if test="taskAssignment != null and taskAssignment.plannedStart != null">
+                AND a.planned_start = #{taskAssignment.plannedStart}
+            </if>
+            <if test="taskAssignment != null and taskAssignment.plannedEnd != null">
+                AND a.planned_end = #{taskAssignment.plannedEnd}
+            </if>
+            <if test="taskAssignment != null and taskAssignment.sequenceOnResource != null">
+                AND a.sequence_on_resource = #{taskAssignment.sequenceOnResource}
+            </if>
+        </where>
+    </select>
 </mapper>

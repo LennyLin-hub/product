@@ -12,10 +12,12 @@ import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
 import com.product.domain.entity.OperationTask;
 import com.product.domain.entity.ProductionBatch;
+import com.product.domain.entity.TaskAssignment;
 import com.product.domain.entity.TaskDependency;
 import com.product.pps.dto.OperationTaskError;
 import com.product.pps.mapper.OperationTaskMapper;
 import com.product.pps.service.IOperationTaskService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
  * @author product
  * @date 2025-12-31
  */
+@Slf4j
 @Service
 public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, OperationTask> implements IOperationTaskService {
 
@@ -150,7 +153,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
         }
         // 先校验批次状态
         List<ProductionBatch> productionBatches = Db.lambdaQuery(ProductionBatch.class)
-                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus)
+                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus, ProductionBatch::getBatchQty)
                 .in(ProductionBatch::getBatchId, batchIds)
                 .list();
         List<OperationTaskError> errors = new ArrayList<>();
@@ -192,6 +195,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
             }
             LocalDateTime baseTime = LocalDateTime.now();
             long cumulativeMinutes = 0; // 累计时长（分钟）
+            long batchQty = item.getBatchQty() == null ? 1L : item.getBatchQty();
             List<OperationTask> batchTasks = new ArrayList<>();
             for (int i = 0; i < 3;) {
                 OperationTask operationTask = new OperationTask();
@@ -199,7 +203,9 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
                 operationTask.setBatchId(item.getBatchId());
                 operationTask.setStatus(StatusConstants.READY_OPERATION_TASK);
                 operationTask.setOpCode(OperationTaskConstants.OP_CODE.get(i));
-                operationTask.setStdDurationMin(OperationTaskConstants.STD_DURATION_MIM.get(i));
+                long baseDuration = OperationTaskConstants.STD_DURATION_MIM.get(i);
+                log.debug("batchQty:" + batchQty);
+                operationTask.setStdDurationMin(baseDuration * batchQty);
                 // 最早开始时间 = 当前时间 + 前面所有工序的累计时长
                 operationTask.setEarliestStart(baseTime.plus(cumulativeMinutes, ChronoUnit.MINUTES));
                 operationTask.setSequence(Long.valueOf(++i));
@@ -262,6 +268,11 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
                 .map(OperationTask::getTaskId)
                 .filter(StringUtils::isNotEmpty)
                 .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(taskIds)) {
+            Db.lambdaUpdate(TaskAssignment.class)
+                    .in(TaskAssignment::getTaskId, taskIds)
+                    .remove();
+        }
         lambdaUpdate().eq(OperationTask::getBatchId, batchId).remove();
         if (CollectionUtils.isNotEmpty(taskIds)) {
             Db.lambdaUpdate(TaskDependency.class)
@@ -271,7 +282,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
                     .remove();
         }
         ProductionBatch productionBatch = Db.lambdaQuery(ProductionBatch.class)
-                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus)
+                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus, ProductionBatch::getBatchQty)
                 .eq(ProductionBatch::getBatchId, batchId)
                 .last("limit 1").one();
         if (productionBatch == null) {
@@ -284,6 +295,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
         }
         LocalDateTime baseTime = LocalDateTime.now();
         long cumulativeMinutes = 0; // 累计时长（分钟）
+        long batchQty = productionBatch.getBatchQty() == null ? 1L : productionBatch.getBatchQty();
         List<OperationTask> operationTasks = new ArrayList<>();
         List<TaskDependency> taskDependencies = new ArrayList<>();
         for (int i = 0; i < 3;) {
@@ -292,7 +304,8 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
             operationTask.setBatchId(batchId);
             operationTask.setStatus(StatusConstants.READY_OPERATION_TASK);
             operationTask.setOpCode(OperationTaskConstants.OP_CODE.get(i));
-            operationTask.setStdDurationMin(OperationTaskConstants.STD_DURATION_MIM.get(i));
+            long baseDuration = OperationTaskConstants.STD_DURATION_MIM.get(i);
+            operationTask.setStdDurationMin(baseDuration * batchQty);
             // 最早开始时间 = 当前时间 + 前面所有工序的累计时长
             operationTask.setEarliestStart(baseTime.plus(cumulativeMinutes, ChronoUnit.MINUTES));
             operationTask.setSequence(Long.valueOf(++i));
@@ -331,11 +344,21 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean revokeSchedule(String taskId) {
-        // TODO 后续需要删除派工记录
+        // 删除派工记录
+        Db.lambdaUpdate(TaskAssignment.class)
+                .eq(TaskAssignment::getTaskId, taskId)
+                .remove();
         return lambdaUpdate().set(OperationTask::getStatus, StatusConstants.READY_OPERATION_TASK)
                 .eq(OperationTask::getTaskId, taskId)
                 .update();
+    }
+
+    @Override
+    public Page<OperationTask> selectReadyAndScheduledPage(Page<OperationTask> page, OperationTask operationTask) {
+        operationTask.setStatusList(Arrays.asList("READY", "SCHEDULED"));
+        return this.page(page, buildQueryWrapper(operationTask));
     }
 
     /**
@@ -352,6 +375,7 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
         wrapper.eq(operationTask.getStdDurationMin() != null, OperationTask::getStdDurationMin, operationTask.getStdDurationMin());
         wrapper.eq(operationTask.getEarliestStart() != null, OperationTask::getEarliestStart, operationTask.getEarliestStart());
         wrapper.eq(operationTask.getStatus() != null, OperationTask::getStatus, operationTask.getStatus());
+        wrapper.in(operationTask.getStatusList() != null, OperationTask::getStatus, operationTask.getStatusList());
         return wrapper;
     }
 

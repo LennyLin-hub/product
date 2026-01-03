@@ -54,4 +54,14 @@ public class TaskAssignment  extends BaseEntity {
     @TableField(value = "sequence_on_resource")
     private Long sequenceOnResource;
 
+    /** 批次ID（关联任务） */
+    @Excel(name = "批次ID")
+    @TableField(exist = false)
+    private String batchId;
+
+    /** 工序（关联任务） */
+    @Excel(name = "工序")
+    @TableField(exist = false)
+    private String opCode;
+
 }

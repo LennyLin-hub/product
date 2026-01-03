@@ -89,4 +89,6 @@ public interface IOperationTaskService extends IService<OperationTask> {
     boolean restore(String taskId);
 
     boolean revokeSchedule(String taskId);
+
+    Page<OperationTask> selectReadyAndScheduledPage(Page<OperationTask> page, OperationTask operationTask);
 }
