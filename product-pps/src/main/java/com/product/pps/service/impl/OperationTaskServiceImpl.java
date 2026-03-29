@@ -8,6 +8,7 @@ import com.product.common.annotation.BizIdPrefix;
 import com.product.common.constant.OperationTaskConstants;
 import com.product.common.constant.StatusConstants;
 import com.product.common.core.result.AjaxResult;
+import com.product.common.exception.ServiceException;
 import com.product.common.utils.StringUtils;
 import com.product.common.utils.uuid.IdUtils;
 import com.product.domain.entity.OperationTask;
@@ -19,12 +20,17 @@ import com.product.pps.mapper.OperationTaskMapper;
 import com.product.pps.service.IOperationTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +42,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, OperationTask> implements IOperationTaskService {
+
+    @Autowired
+    @Qualifier("threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     /**
      * 查询工序任务
@@ -151,24 +161,40 @@ public class OperationTaskServiceImpl extends ServiceImpl<OperationTaskMapper, O
         if (batchIds == null || batchIds.isEmpty()) {
             return AjaxResult.success("批次不能为空");
         }
-        // 先校验批次状态
-        List<ProductionBatch> productionBatches = Db.lambdaQuery(ProductionBatch.class)
-                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus, ProductionBatch::getBatchQty)
-                .in(ProductionBatch::getBatchId, batchIds)
-                .list();
+        CompletableFuture<List<ProductionBatch>> productionBatchFuture = CompletableFuture.supplyAsync(() ->
+                        Db.lambdaQuery(ProductionBatch.class)
+                                .select(ProductionBatch::getBatchId, ProductionBatch::getStatus, ProductionBatch::getBatchQty)
+                                .in(ProductionBatch::getBatchId, batchIds)
+                                .list(),
+                threadPoolTaskExecutor);
+        CompletableFuture<List<String>> existingTaskBatchFuture = CompletableFuture.supplyAsync(() ->
+                        lambdaQuery()
+                                .select(OperationTask::getBatchId)
+                                .in(OperationTask::getBatchId, batchIds)
+                                .list()
+                                .stream()
+                                .map(OperationTask::getBatchId)
+                                .distinct()
+                                .collect(Collectors.toList()),
+                threadPoolTaskExecutor);
+        List<ProductionBatch> productionBatches;
+        List<String> list;
+        try {
+            CompletableFuture.allOf(productionBatchFuture, existingTaskBatchFuture).join();
+            productionBatches = productionBatchFuture.join();
+            list = existingTaskBatchFuture.join();
+        } catch (CompletionException e) {
+            log.error("并行查询批次与任务信息失败，batchIds={}", batchIds, e);
+            throw new ServiceException("查询批次任务信息失败");
+        }
+        // 错误集合
         List<OperationTaskError> errors = new ArrayList<>();
+
         List<OperationTask> operationTasks = new ArrayList<>();
+
         List<TaskDependency> taskDependencies = new ArrayList<>();
         Map<String, ProductionBatch> batchMap = productionBatches.stream()
                 .collect(Collectors.toMap(ProductionBatch::getBatchId, item -> item, (a, b) -> a));
-        List<String> list = lambdaQuery()
-                .select(OperationTask::getBatchId)
-                .in(OperationTask::getBatchId, batchIds)
-                .list()
-                .stream()
-                .map(OperationTask::getBatchId)
-                .distinct()
-                .collect(Collectors.toList());
         // 开始循环添加任务
         for (String batchId : batchIds) {
             ProductionBatch item = batchMap.get(batchId);

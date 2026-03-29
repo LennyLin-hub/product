@@ -198,15 +198,18 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
     }
 
     private boolean scheduleTasks(List<OperationTask> tasks, LocalDateTime assignmentStart) {
+        // 加载所有可用的机台
         List<Resource> machines = loadAvailableMachines(assignmentStart);
         if (CollectionUtils.isEmpty(machines)) {
             return false;
         }
+        // 先读取机台对应日历id，然后获取日历对象
         Map<Long, Calendar> calendarMap = loadCalendarMap(machines);
         for (OperationTask task : tasks) {
             if (task == null) {
                 continue;
             }
+            // 获取可用机台中最早可用时间
             MachineChoice choice = chooseMachine(task, machines, calendarMap, assignmentStart);
             if (choice == null) {
                 return false;
@@ -277,7 +280,9 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             if (machine == null) {
                 continue;
             }
+            // 获取机器日历
             Calendar calendar = calendarMap.get(machine.getCalendarId());
+            // 获取机器最早可用时间
             LocalDateTime machineNextTime = getMachineNextTime(machine.getResourceId());
             LocalDateTime candidate = maxTime(task.getEarliestStart(), machineNextTime, assignmentStart);
             LocalDateTime plannedStart = adjustToShiftStart(calendar, candidate);
@@ -357,6 +362,7 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             return time;
         }
         LocalDate date = time.toLocalDate();
+        // 将最早开始时间与班次日期进行比较
         date = nextWorkday(calendar, date);
         LocalDateTime shiftStartTime = LocalDateTime.of(date, startTime);
         LocalDateTime shiftEndTime = LocalDateTime.of(date, endTime);

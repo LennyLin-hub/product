@@ -136,6 +136,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ProductServerApplication: 主启动类
   - 使用@MapperScan扫描所有Mapper接口
   - 排除DataSource自动配置，使用自定义数据源
+  - JVM配置: 禁用JMX远程管理 (-Dcom.sun.management.jmxremote=false) 避免端口冲突
 
 ## 项目进度
 
