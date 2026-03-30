@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,6 +108,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
             // 将认证对象设置到Spring Security上下文中
             // 后续的权限检查和业务逻辑都可以通过SecurityContext获取用户信息
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            if (loginUser.getUserId() != null) {
+                MDC.put("userId", String.valueOf(loginUser.getUserId()));
+            }
+            if (StringUtils.isNotEmpty(loginUser.getUsername())) {
+                MDC.put("username", loginUser.getUsername());
+            }
         }
 
         // 将请求传递给过滤器链中的下一个组件

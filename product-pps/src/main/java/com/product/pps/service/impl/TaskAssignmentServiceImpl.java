@@ -1,12 +1,12 @@
 package com.product.pps.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.product.common.constant.ResourceConstants;
 import com.product.common.constant.StatusConstants;
+import com.product.common.exception.ServiceException;
 import com.product.common.utils.StringUtils;
 import com.product.domain.dto.TaskAssignmentDTO;
 import com.product.domain.entity.Calendar;
@@ -14,12 +14,15 @@ import com.product.domain.entity.OperationTask;
 import com.product.domain.entity.Resource;
 import com.product.domain.entity.TaskAssignment;
 import com.product.domain.vo.TaskAssignmentVO;
+import com.product.pps.dto.MachineRuntimeStatsDTO;
+import com.product.pps.mapper.OperationTaskMapper;
 import com.product.pps.mapper.TaskAssignmentMapper;
 import com.product.pps.service.ITaskAssignmentService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -36,8 +39,14 @@ import java.util.stream.Collectors;
  */
 @Service
 public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper, TaskAssignment> implements ITaskAssignmentService {
+    private static final int SCHEDULE_BATCH_SIZE = 200;
+
     @Autowired
     private TaskAssignmentMapper taskAssignmentMapper;
+    @Autowired
+    private OperationTaskMapper operationTaskMapper;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
     /**
      * 查询派工/排程结果
      *
@@ -149,7 +158,6 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public boolean schedule(TaskAssignmentDTO taskAssignmentDTO) {
         if (taskAssignmentDTO == null || StringUtils.isEmpty(taskAssignmentDTO.getTaskId())) {
             return scheduleAll(taskAssignmentDTO);
@@ -164,21 +172,50 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             return false;
         }
         LocalDateTime assignmentStart = resolveAssignmentStart(taskAssignmentDTO);
-        return scheduleTasks(List.of(task), assignmentStart);
+        // 单任务排程保持原子性，避免 assignment 已落库但任务状态未更新。
+        Boolean scheduled = transactionTemplate.execute(status -> scheduleTasks(List.of(task), assignmentStart));
+        return Boolean.TRUE.equals(scheduled);
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public boolean scheduleAll(TaskAssignmentDTO taskAssignmentDTO) {
+        // 获取前端传入的开始时间
         LocalDateTime assignmentStart = resolveAssignmentStart(taskAssignmentDTO);
-        List<OperationTask> tasks = Db.lambdaQuery(OperationTask.class)
-                .eq(OperationTask::getStatus, StatusConstants.READY_OPERATION_TASK)
-                .orderByAsc(OperationTask::getBatchId, OperationTask::getSequence)
-                .list();
-        if (CollectionUtils.isEmpty(tasks)) {
+        // 获取状态良好的机器
+        List<Resource> machines = loadAvailableMachines(assignmentStart);
+        if (CollectionUtils.isEmpty(machines)) {
+            return false;
+        }
+        // 加载机器对应的日历
+        Map<Long, Calendar> calendarMap = loadCalendarMap(machines);
+        // 先做一次资源占用快照，后续批次在内存中滚动推进，避免循环查库。
+        MachineRuntimeContext runtimeContext = buildMachineRuntimeContext(machines);
+        List<ScheduleBatchResult> batchResults = new ArrayList<>();
+        long current = 1L;
+        while (true) {
+            // 计算阶段按页推进，避免一次把所有 READY 任务全部加载进内存。
+            Page<OperationTask> page = new Page<>(current, SCHEDULE_BATCH_SIZE, false);
+            Page<OperationTask> taskPage = Db.lambdaQuery(OperationTask.class)
+                    .eq(OperationTask::getStatus, StatusConstants.READY_OPERATION_TASK)
+                    .orderByAsc(OperationTask::getBatchId, OperationTask::getSequence, OperationTask::getTaskId)
+                    .page(page);
+            List<OperationTask> tasks = taskPage.getRecords();
+            if (CollectionUtils.isEmpty(tasks)) {
+                break;
+            }
+            ScheduleBatchResult batchResult = calculateBatchAssignments(tasks, machines, calendarMap, runtimeContext, assignmentStart);
+            batchResults.add(batchResult);
+            if (!taskPage.hasNext()) {
+                break;
+            }
+            current++;
+        }
+        if (CollectionUtils.isEmpty(batchResults)) {
             return true;
         }
-        return scheduleTasks(tasks, assignmentStart);
+        // 落库阶段统一放到一个事务里，保证 scheduleAll 仍然是全有或全无。
+        Boolean persisted = transactionTemplate.execute(status -> persistAllBatchResults(batchResults));
+        return Boolean.TRUE.equals(persisted);
     }
 
     /**
@@ -205,29 +242,64 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
         }
         // 先读取机台对应日历id，然后获取日历对象
         Map<Long, Calendar> calendarMap = loadCalendarMap(machines);
+        MachineRuntimeContext runtimeContext = buildMachineRuntimeContext(machines);
+        ScheduleBatchResult batchResult = calculateBatchAssignments(tasks, machines, calendarMap, runtimeContext, assignmentStart);
+        return persistBatchResult(batchResult);
+    }
+
+    private ScheduleBatchResult calculateBatchAssignments(List<OperationTask> tasks,
+                                                          List<Resource> machines,
+                                                          Map<Long, Calendar> calendarMap,
+                                                          MachineRuntimeContext runtimeContext,
+                                                          LocalDateTime assignmentStart) {
+        List<TaskAssignment> assignments = new ArrayList<>(tasks.size());
+        List<String> taskIds = new ArrayList<>(tasks.size());
         for (OperationTask task : tasks) {
             if (task == null) {
                 continue;
             }
             // 获取可用机台中最早可用时间
-            MachineChoice choice = chooseMachine(task, machines, calendarMap, assignmentStart);
+            MachineChoice choice = chooseMachine(task, machines, calendarMap, assignmentStart, runtimeContext);
             if (choice == null) {
-                return false;
+                throw new ServiceException("任务" + task.getTaskId() + "没有可用机台");
             }
             TaskAssignment assignment = new TaskAssignment();
             assignment.setTaskId(task.getTaskId());
             assignment.setMachineId(choice.machineId);
             assignment.setPlannedStart(choice.plannedStart);
             assignment.setPlannedEnd(choice.plannedEnd);
-            assignment.setSequenceOnResource(nextSequenceOnResource(choice.machineId));
-            if (!save(assignment)) {
-                return false;
-            }
-            boolean updated = Db.lambdaUpdate(OperationTask.class)
-                    .set(OperationTask::getStatus, StatusConstants.SCHEDULED_OPERATION_TASK)
-                    .eq(OperationTask::getTaskId, task.getTaskId())
-                    .update();
-            if (!updated) {
+            assignment.setSequenceOnResource(choice.sequenceOnResource);
+            assignments.add(assignment);
+            taskIds.add(task.getTaskId());
+            // 当前批次内不回写数据库，直接推进内存态的机台可用时间与序号。
+            runtimeContext.update(choice.machineId, choice.plannedEnd, choice.sequenceOnResource);
+        }
+        return new ScheduleBatchResult(assignments, taskIds);
+    }
+
+    private boolean persistBatchResult(ScheduleBatchResult batchResult) {
+        if (batchResult == null || CollectionUtils.isEmpty(batchResult.assignments)) {
+            return true;
+        }
+        boolean saved = saveBatch(batchResult.assignments, SCHEDULE_BATCH_SIZE);
+        if (!saved) {
+            return false;
+        }
+        // 仅允许 READY -> SCHEDULED，避免并发下把已变更状态的任务静默覆盖。
+        int updated = operationTaskMapper.batchMarkScheduled(
+                batchResult.taskIds,
+                StatusConstants.READY_OPERATION_TASK,
+                StatusConstants.SCHEDULED_OPERATION_TASK
+        );
+        if (updated != batchResult.taskIds.size()) {
+            throw new ServiceException("任务状态更新失败，预期更新" + batchResult.taskIds.size() + "条，实际更新" + updated + "条");
+        }
+        return true;
+    }
+
+    private boolean persistAllBatchResults(List<ScheduleBatchResult> batchResults) {
+        for (ScheduleBatchResult batchResult : batchResults) {
+            if (!persistBatchResult(batchResult)) {
                 return false;
             }
         }
@@ -274,7 +346,8 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
     private MachineChoice chooseMachine(OperationTask task,
                                         List<Resource> machines,
                                         Map<Long, Calendar> calendarMap,
-                                        LocalDateTime assignmentStart) {
+                                        LocalDateTime assignmentStart,
+                                        MachineRuntimeContext runtimeContext) {
         MachineChoice best = null;
         for (Resource machine : machines) {
             if (machine == null) {
@@ -283,49 +356,73 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             // 获取机器日历
             Calendar calendar = calendarMap.get(machine.getCalendarId());
             // 获取机器最早可用时间
-            LocalDateTime machineNextTime = getMachineNextTime(machine.getResourceId());
+            LocalDateTime machineNextTime = runtimeContext.getNextAvailableTime(machine.getResourceId());
             LocalDateTime candidate = maxTime(task.getEarliestStart(), machineNextTime, assignmentStart);
             LocalDateTime plannedStart = adjustToShiftStart(calendar, candidate);
             if (plannedStart == null) {
                 continue;
             }
+            // 取任务时长
             long duration = task.getStdDurationMin() == null ? 0L : task.getStdDurationMin();
+            /**
+             * 算实际时间窗口
+             * 判断是否会跨下班时间，如果会需要根据班次规则把任务整体顺延到下一工作日班次开始
+             */
             TimeWindow window = adjustForShiftEnd(calendar, plannedStart, duration);
             if (window == null) {
                 continue;
             }
-            MachineChoice choice = new MachineChoice(machine.getResourceId(), window.start, window.end);
-            if (best == null || choice.plannedStart.isBefore(best.plannedStart)) {
+            Long sequenceOnResource = runtimeContext.getNextSequence(machine.getResourceId());
+            MachineChoice choice = new MachineChoice(machine.getResourceId(), window.start, window.end, sequenceOnResource);
+            // 如果没有最佳方案，直接把该机台当作最佳方案
+            // 如果有最佳方案则比较谁的开始时间更早
+            if (best == null
+                    || choice.plannedStart.isBefore(best.plannedStart)
+                    || (choice.plannedStart.isEqual(best.plannedStart) && choice.plannedEnd.isBefore(best.plannedEnd))) {
                 best = choice;
             }
         }
+        // 返回最早开始的机台
         return best;
     }
 
-    private LocalDateTime getMachineNextTime(String machineId) {
-        return baseMapper.selectMachineNextTime(
-                machineId,
+    private MachineRuntimeContext buildMachineRuntimeContext(List<Resource> machines) {
+        // 获取机器id集合
+        List<String> machineIds = machines.stream()
+                .map(Resource::getResourceId)
+                .filter(StringUtils::isNotEmpty)
+                .distinct()
+                .collect(Collectors.toList());
+        MachineRuntimeContext context = new MachineRuntimeContext();
+        if (CollectionUtils.isEmpty(machineIds)) {
+            return context;
+        }
+        // 预加载每台机的最近占用结束时间，后续排程直接走内存快照。
+        List<MachineRuntimeStatsDTO> latestEndTimes = baseMapper.selectMachineLatestEndTime(
+                machineIds,
                 List.of(
                         StatusConstants.SCHEDULED_OPERATION_TASK,
                         StatusConstants.RUNNING_OPERATION_TASK,
                         StatusConstants.PAUSED_OPERATION_TASK
                 )
         );
-    }
-
-    private Long nextSequenceOnResource(String machineId) {
-        QueryWrapper<TaskAssignment> wrapper = new QueryWrapper<>();
-        wrapper.select("MAX(sequence_on_resource) AS sequence_on_resource")
-                .eq("machine_id", machineId);
-        List<Object> result = baseMapper.selectObjs(wrapper);
-        if (CollectionUtils.isEmpty(result) || result.get(0) == null) {
-            return 1L;
+        for (MachineRuntimeStatsDTO row : latestEndTimes) {
+            String machineId = row.getMachineId();
+            LocalDateTime latestEndTime = row.getLatestEndTime();
+            if (StringUtils.isNotEmpty(machineId) && latestEndTime != null) {
+                context.nextAvailableTimeMap.put(machineId, latestEndTime);
+            }
         }
-        Object value = result.get(0);
-        if (value instanceof Number) {
-            return ((Number) value).longValue() + 1L;
+        // 预加载资源上的最大顺序号，避免每次落点都重新聚合 task_assignment。
+        List<MachineRuntimeStatsDTO> maxSequences = baseMapper.selectMachineMaxSequence(machineIds);
+        for (MachineRuntimeStatsDTO row : maxSequences) {
+            String machineId = row.getMachineId();
+            Long maxSequence = row.getMaxSequence();
+            if (StringUtils.isNotEmpty(machineId) && maxSequence != null) {
+                context.nextSequenceMap.put(machineId, maxSequence + 1L);
+            }
         }
-        return 1L;
+        return context;
     }
 
     private LocalDateTime maxTime(LocalDateTime... times) {
@@ -362,13 +459,17 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             return time;
         }
         LocalDate date = time.toLocalDate();
-        // 将最早开始时间与班次日期进行比较
+        // 将最早开始时间与班次日期进行比较获取最早的工作日
         date = nextWorkday(calendar, date);
+        // 获取该日的班次开始时间
         LocalDateTime shiftStartTime = LocalDateTime.of(date, startTime);
+        // 获取该日的班次结束时间
         LocalDateTime shiftEndTime = LocalDateTime.of(date, endTime);
+        // 如果传入时间在班次开始时间前，那么直接返回开始时间
         if (time.isBefore(shiftStartTime)) {
             return shiftStartTime;
         }
+        // 如果时间在班次开始时间后，则需要判断是否在班次结束时间前
         if (!time.isBefore(shiftEndTime)) {
             LocalDate nextDate = nextWorkday(calendar, date.plusDays(1));
             return LocalDateTime.of(nextDate, startTime);
@@ -440,6 +541,7 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
         String workdayPattern = calendar.getWorkdayPattern();
         LocalDate next = date;
         int guard = 0;
+        // 将传入日期与班次进行比较，获取最早的工作日
         while (!isWorkday(workdayPattern, next.getDayOfWeek()) && guard < 7) {
             next = next.plusDays(1);
             guard++;
@@ -474,11 +576,14 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
             int startValue = start.getValue();
             int endValue = end.getValue();
             int dayValue = dayOfWeek.getValue();
+            // 不跨周
             if (startValue <= endValue) {
                 return dayValue >= startValue && dayValue <= endValue;
             }
+            // 跨周
             return dayValue >= startValue || dayValue <= endValue;
         }
+        // 工作日为单值时直接判断是否匹配
         return matchesDayToken(normalized, dayOfWeek);
     }
 
@@ -533,11 +638,13 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
         private final String machineId;
         private final LocalDateTime plannedStart;
         private final LocalDateTime plannedEnd;
+        private final Long sequenceOnResource;
 
-        private MachineChoice(String machineId, LocalDateTime plannedStart, LocalDateTime plannedEnd) {
+        private MachineChoice(String machineId, LocalDateTime plannedStart, LocalDateTime plannedEnd, Long sequenceOnResource) {
             this.machineId = machineId;
             this.plannedStart = plannedStart;
             this.plannedEnd = plannedEnd;
+            this.sequenceOnResource = sequenceOnResource;
         }
     }
 
@@ -548,6 +655,39 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
         private TimeWindow(LocalDateTime start, LocalDateTime end) {
             this.start = start;
             this.end = end;
+        }
+    }
+
+    private static class ScheduleBatchResult {
+        private final List<TaskAssignment> assignments;
+        private final List<String> taskIds;
+
+        private ScheduleBatchResult(List<TaskAssignment> assignments, List<String> taskIds) {
+            this.assignments = assignments;
+            this.taskIds = taskIds;
+        }
+    }
+
+    private static class MachineRuntimeContext {
+        // 机器最近可用时间集合
+        private final Map<String, LocalDateTime> nextAvailableTimeMap = new HashMap<>();
+        private final Map<String, Long> nextSequenceMap = new HashMap<>();
+
+        private LocalDateTime getNextAvailableTime(String machineId) {
+            return nextAvailableTimeMap.get(machineId);
+        }
+
+        private Long getNextSequence(String machineId) {
+            return nextSequenceMap.getOrDefault(machineId, 1L);
+        }
+
+        private void update(String machineId, LocalDateTime plannedEnd, Long usedSequence) {
+            if (StringUtils.isNotEmpty(machineId) && plannedEnd != null) {
+                nextAvailableTimeMap.put(machineId, plannedEnd);
+            }
+            if (StringUtils.isNotEmpty(machineId) && usedSequence != null) {
+                nextSequenceMap.put(machineId, usedSequence + 1L);
+            }
         }
     }
 

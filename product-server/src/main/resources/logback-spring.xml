@@ -1,97 +1,226 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 日志存放路径 -->
-    <property name="log.path" value="/home/chuan/project/backend/logs" />
-    <!-- 日志输出格式 -->
-    <property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - %msg%n" />
-    <!-- 定义彩色日志格式 -->
+    <!-- ==================== Spring属性配置 ==================== -->
+    <!-- 从Spring配置中读取应用名称，默认值为product-server -->
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="product-server"/>
+    <!-- 从Spring配置中读取当前激活的profile，默认值为default -->
+    <springProperty scope="context" name="activeProfile" source="spring.profiles.active" defaultValue="default"/>
+    <!-- 从Spring配置中读取日志文件存储路径，默认值为项目logs目录 -->
+    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="/home/chuan/project/backend/logs"/>
+
+    <!-- ==================== 日志格式配置 ==================== -->
+    <!-- 控制台日志输出格式：
+         - %d{yyyy-MM-dd HH:mm:ss.SSS}: 日期时间（精确到毫秒）
+         - %5p: 日志级别（INFO、DEBUG等，右对齐5字符宽度）
+         - ${PID:-}: 进程ID
+         - %t: 线程名称
+         - %X{traceId:-N/A}: MDC中的traceId（链路追踪ID），不存在则显示N/A
+         - %logger: Logger名称
+         - %m: 日志消息
+         - %n: 换行符
+         - %wEx: 异常堆栈信息
+         - %clr(): 颜色转换（括号内指定颜色）
+    -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr([%X{traceId:-N/A}]){yellow} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
+
+    <!-- ==================== 转换规则配置 ==================== -->
+    <!-- 颜色转换器：支持控制台输出带颜色 -->
     <conversionRule conversionWord="clr" class="org.springframework.boot.logging.logback.ColorConverter"/>
+    <!-- 异常堆栈转换器：去除异常堆栈中的空白行 -->
     <conversionRule conversionWord="wex" class="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+    <!-- 扩展异常堆栈转换器：格式化异常堆栈输出 -->
     <conversionRule conversionWord="wEx" class="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
-    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
-    <!-- 控制台输出 -->
-    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+
+    <!-- ==================== Appender配置 ==================== -->
+    <!-- CONSOLE: 控制台输出Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- 系统日志输出 -->
-    <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/sys-info.log</file>
-        <!-- 循环政策：基于时间创建日志文件 -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 日志文件名格式 -->
-            <fileNamePattern>${log.path}/sys-info.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- 日志最大的历史 60天 -->
-            <maxHistory>60</maxHistory>
+    <!-- APP_FILE: 应用日志文件Appender（JSON格式） -->
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前日志文件路径 -->
+        <file>${logPath}/app.json.log</file>
+        <!-- 滚动策略：按日期和大小滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 归档文件命名模式：app.2026-03-29.0.json.log -->
+            <fileNamePattern>${logPath}/app.%d{yyyy-MM-dd}.%i.json.log</fileNamePattern>
+            <!-- 单个文件最大50MB -->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 保留30天的历史日志 -->
+            <maxHistory>30</maxHistory>
+            <!-- 所有日志文件总大小上限5GB -->
+            <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
-        <encoder>
-            <pattern>${log.pattern}</pattern>
+        <!-- JSON格式编码器（适用于日志采集系统如ELK） -->
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <!-- 时间戳字段 -->
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                    <!-- 时区设置为台北时间 -->
+                    <timeZone>Asia/Taipei</timeZone>
+                </timestamp>
+                <!-- 自定义JSON字段模式 -->
+                <pattern>
+                    <pattern>
+                        {
+                        "service.name":"${appName}",
+                        "service.env":"${activeProfile}",
+                        "log.type":"application",
+                        "level":"%level",
+                        "logger":"%logger",
+                        "thread":"%thread",
+                        "message":"%message",
+                        "traceId":"%X{traceId:-}",
+                        "requestId":"%X{requestId:-}",
+                        "userId":"%X{userId:-}",
+                        "username":"%X{username:-}",
+                        "clientIp":"%X{clientIp:-}",
+                        "httpMethod":"%X{httpMethod:-}",
+                        "requestUri":"%X{requestUri:-}"
+                        }
+                    </pattern>
+                </pattern>
+                <!-- MDC（Mapped Diagnostic Context）所有数据 -->
+                <mdc/>
+                <!-- 日志参数 -->
+                <arguments/>
+                <!-- 异常堆栈 -->
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                </stackTrace>
+            </providers>
         </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <!-- 过滤的级别 -->
-            <level>INFO</level>
-            <!-- 匹配时的操作：接收（记录） -->
-            <onMatch>ACCEPT</onMatch>
-            <!-- 不匹配时的操作：拒绝（不记录） -->
-            <onMismatch>DENY</onMismatch>
-        </filter>
     </appender>
 
-    <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/sys-error.log</file>
-        <!-- 循环政策：基于时间创建日志文件 -->
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 日志文件名格式 -->
-            <fileNamePattern>${log.path}/sys-error.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- 日志最大的历史 60天 -->
+    <!-- ERROR_FILE: 错误日志文件Appender（JSON格式，仅记录ERROR级别） -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前错误日志文件路径 -->
+        <file>${logPath}/error.json.log</file>
+        <!-- 滚动策略：按日期和大小滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 归档文件命名模式：error.2026-03-29.0.json.log -->
+            <fileNamePattern>${logPath}/error.%d{yyyy-MM-dd}.%i.json.log</fileNamePattern>
+            <!-- 单个文件最大50MB -->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 保留60天的历史日志（错误日志保留更久） -->
             <maxHistory>60</maxHistory>
+            <!-- 所有日志文件总大小上限5GB -->
+            <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
-        <encoder>
-            <pattern>${log.pattern}</pattern>
-        </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <!-- 过滤的级别 -->
+        <!-- 过滤器：仅记录ERROR级别及以上的日志 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
-            <!-- 匹配时的操作：接收（记录） -->
-            <onMatch>ACCEPT</onMatch>
-            <!-- 不匹配时的操作：拒绝（不记录） -->
-            <onMismatch>DENY</onMismatch>
         </filter>
-    </appender>
-
-    <!-- 用户访问日志输出  -->
-    <appender name="sys-user" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.path}/sys-user.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 按天回滚 daily -->
-            <fileNamePattern>${log.path}/sys-user.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- 日志最大的历史 60天 -->
-            <maxHistory>60</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${log.pattern}</pattern>
+        <!-- JSON格式编码器 -->
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                    <timeZone>Asia/Taipei</timeZone>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "service.name":"${appName}",
+                        "service.env":"${activeProfile}",
+                        "log.type":"error",
+                        "level":"%level",
+                        "logger":"%logger",
+                        "thread":"%thread",
+                        "message":"%message",
+                        "traceId":"%X{traceId:-}",
+                        "requestId":"%X{requestId:-}",
+                        "userId":"%X{userId:-}",
+                        "username":"%X{username:-}",
+                        "clientIp":"%X{clientIp:-}",
+                        "httpMethod":"%X{httpMethod:-}",
+                        "requestUri":"%X{requestUri:-}"
+                        }
+                    </pattern>
+                </pattern>
+                <mdc/>
+                <arguments/>
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                </stackTrace>
+            </providers>
         </encoder>
     </appender>
 
-    <!-- 系统模块日志级别控制  -->
-    <logger name="com.travel" level="debug" />
-    <!-- Spring日志级别控制  -->
-    <logger name="org.springframework" level="info" />
+    <!-- AUDIT_FILE: 审计日志文件Appender（JSON格式，用于用户操作审计） -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前审计日志文件路径 -->
+        <file>${logPath}/audit.json.log</file>
+        <!-- 滚动策略：按日期和大小滚动 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 归档文件命名模式：audit.2026-03-29.0.json.log -->
+            <fileNamePattern>${logPath}/audit.%d{yyyy-MM-dd}.%i.json.log</fileNamePattern>
+            <!-- 单个文件最大50MB -->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 保留90天的历史日志（审计日志保留最久，用于合规审计） -->
+            <maxHistory>90</maxHistory>
+            <!-- 所有日志文件总大小上限5GB -->
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <!-- JSON格式编码器 -->
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                    <timeZone>Asia/Taipei</timeZone>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "service.name":"${appName}",
+                        "service.env":"${activeProfile}",
+                        "log.type":"audit",
+                        "level":"%level",
+                        "logger":"%logger",
+                        "thread":"%thread",
+                        "message":"%message",
+                        "traceId":"%X{traceId:-}",
+                        "requestId":"%X{requestId:-}",
+                        "userId":"%X{userId:-}",
+                        "username":"%X{username:-}",
+                        "clientIp":"%X{clientIp:-}",
+                        "httpMethod":"%X{httpMethod:-}",
+                        "requestUri":"%X{requestUri:-}"
+                        }
+                    </pattern>
+                </pattern>
+                <mdc/>
+                <arguments/>
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                </stackTrace>
+            </providers>
+        </encoder>
+    </appender>
 
-    <root level="info">
-        <appender-ref ref="console" />
-    </root>
-
-    <!--系统操作日志-->
-    <root level="info">
-        <appender-ref ref="file_info" />
-        <appender-ref ref="file_error" />
-    </root>
-
-    <!--系统用户操作日志-->
-    <logger name="sys-user" level="info">
-        <appender-ref ref="sys-user"/>
+    <!-- ==================== Logger配置 ==================== -->
+    <!-- com.product包：DEBUG级别（开发时便于调试） -->
+    <logger name="com.product" level="DEBUG"/>
+    <!-- Spring框架：INFO级别 -->
+    <logger name="org.springframework" level="INFO"/>
+    <!-- sys-user审计日志：INFO级别，仅输出到AUDIT_FILE，不向上传播（additivity=false） -->
+    <logger name="sys-user" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE"/>
     </logger>
+
+    <!-- ==================== Root Logger配置 ==================== -->
+    <!-- 根日志级别：INFO -->
+    <root level="INFO">
+        <!-- 输出到控制台 -->
+        <appender-ref ref="CONSOLE"/>
+        <!-- 输出到应用日志文件 -->
+        <appender-ref ref="APP_FILE"/>
+        <!-- 输出到错误日志文件 -->
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
 </configuration>

@@ -49,7 +49,7 @@ public class FilterConfig
     public FilterRegistrationBean someFilterRegistration()
     {
         FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(new RepeatableFilter());
+        registration.setFilter(new QRepeatableFilter());
         registration.addUrlPatterns("/*");
         registration.setName("repeatableFilter");
         registration.setOrder(FilterRegistrationBean.LOWEST_PRECEDENCE);

@@ -25,6 +25,31 @@
             #{status}
         </foreach>
     </select>
+    <select id="selectMachineLatestEndTime" resultType="com.product.pps.dto.MachineRuntimeStatsDTO">
+        SELECT a.machine_id AS machineId,
+               MAX(a.planned_end) AS latestEndTime
+        FROM task_assignment a
+        INNER JOIN operation_task t ON t.task_id = a.task_id
+        WHERE a.machine_id IN
+        <foreach collection="machineIds" item="machineId" open="(" separator="," close=")">
+            #{machineId}
+        </foreach>
+          AND t.status IN
+        <foreach collection="statusList" item="status" open="(" separator="," close=")">
+            #{status}
+        </foreach>
+        GROUP BY a.machine_id
+    </select>
+    <select id="selectMachineMaxSequence" resultType="com.product.pps.dto.MachineRuntimeStatsDTO">
+        SELECT machine_id AS machineId,
+               MAX(sequence_on_resource) AS maxSequence
+        FROM task_assignment
+        WHERE machine_id IN
+        <foreach collection="machineIds" item="machineId" open="(" separator="," close=")">
+            #{machineId}
+        </foreach>
+        GROUP BY machine_id
+    </select>
     <select id="selectTaskAssignmentPage" resultMap="TaskAssignmentMap">
         SELECT a.assignment_id,
                a.task_id,

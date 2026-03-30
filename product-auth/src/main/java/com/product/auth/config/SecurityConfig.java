@@ -1,6 +1,7 @@
 package com.product.auth.config;
 
 import com.product.auth.filter.JwtAuthenticationTokenFilter;
+import com.product.auth.filter.TraceMdcFilter;
 import com.product.auth.handle.AuthenticationEntryPointImpl;
 import com.product.auth.handle.LogoutSuccessHandlerImpl;
 import com.product.auth.properties.PermitAllUrlProperties;
@@ -56,6 +57,12 @@ public class SecurityConfig
      */
     @Autowired
     private JwtAuthenticationTokenFilter authenticationTokenFilter;
+
+    /**
+     * 请求日志链路过滤器
+     */
+    @Autowired
+    private TraceMdcFilter traceMdcFilter;
 
     /**
      * 跨域过滤器
@@ -125,6 +132,8 @@ public class SecurityConfig
             })
             // 添加Logout filter
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
+            // 添加日志链路过滤器，保证后续过滤器和业务日志都带 traceId
+            .addFilterBefore(traceMdcFilter, JwtAuthenticationTokenFilter.class)
             // 添加JWT filter
             .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
             // 添加CORS filter

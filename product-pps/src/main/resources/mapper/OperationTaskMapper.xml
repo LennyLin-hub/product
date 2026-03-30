@@ -4,4 +4,13 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.product.pps.mapper.OperationTaskMapper">
     <!-- MyBatis-Plus 已提供通用 CRUD，这里按需补充自定义 SQL -->
+    <update id="batchMarkScheduled">
+        UPDATE operation_task
+        SET status = #{toStatus}
+        WHERE status = #{fromStatus}
+          AND task_id IN
+        <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </update>
 </mapper>
