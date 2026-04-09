@@ -7,9 +7,11 @@ import com.product.common.core.result.AjaxResult;
 import com.product.core.utils.ExcelUtil;
 import com.product.common.utils.PageUtils;
 import com.product.domain.dto.TaskAssignmentDTO;
+import com.product.domain.entity.ScheduleJob;
 import com.product.domain.entity.TaskAssignment;
 import com.product.domain.vo.TaskAssignmentVO;
 import com.product.pps.service.ITaskAssignmentService;
+import com.product.pps.service.impl.ScheduleJobTimeoutService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,6 +38,8 @@ import java.util.List;
 public class TaskAssignmentController extends BaseController {
     @Autowired
     private ITaskAssignmentService taskAssignmentService;
+    @Autowired
+    private ScheduleJobTimeoutService scheduleJobTimeoutService;
 
     /**
      * 查询派工/排程结果列表
@@ -124,5 +128,39 @@ public class TaskAssignmentController extends BaseController {
     @PostMapping("/scheduleAll")
     public AjaxResult scheduleAll(@RequestBody TaskAssignmentDTO taskAssignmentDTO) {
         return toAjax(taskAssignmentService.scheduleAll(taskAssignmentDTO));
+    }
+
+    /**
+     * 异步全量排程
+     * @param taskAssignmentDTO
+     * @return
+     */
+    @PostMapping("/scheduleAllAsync")
+    public AjaxResult scheduleAllAsync(@RequestBody TaskAssignmentDTO taskAssignmentDTO) {
+        // 异步接口只返回 jobId，实际排程在后台线程执行。
+        String jobId = taskAssignmentService.scheduleAllAsync(taskAssignmentDTO);
+        return AjaxResult.success("排程任务已提交", jobId);
+    }
+
+    @GetMapping("/scheduleJob/{jobId}")
+    public AjaxResult getScheduleJob(@PathVariable("jobId") String jobId) {
+        // 供前端轮询异步排程任务状态（PENDING/RUNNING/SUCCESS/FAILED）。
+        ScheduleJob scheduleJob = taskAssignmentService.selectScheduleJobByJobId(jobId);
+        return AjaxResult.success(scheduleJob);
+    }
+
+    @GetMapping("/scheduleJob/list")
+    public TableDataInfo listScheduleJob(ScheduleJob scheduleJob) {
+        Page<ScheduleJob> page = PageUtils.buildPage();
+        return getDataTable(taskAssignmentService.selectScheduleJobPage(page, scheduleJob));
+    }
+
+    /**
+     * 手动触发一次排程任务超时兜底扫描
+     */
+    @PostMapping("/scheduleJob/sweepTimeout")
+    public AjaxResult sweepTimeoutScheduleJob() {
+        int count = scheduleJobTimeoutService.sweepTimeoutJobsOnce();
+        return AjaxResult.success("超时兜底扫描完成", count);
     }
 }

@@ -42,6 +42,7 @@ public class TraceMdcFilter extends OncePerRequestFilter {
             response.setHeader(REQUEST_ID_HEADER, requestId);
             filterChain.doFilter(request, response);
         } finally {
+            // 清理线程
             MDC.clear();
         }
     }

@@ -2,11 +2,11 @@
 spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    # 将fast换成你创建的数据库名称
-    url: jdbc:mysql://localhost:3306/product?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-    username: root          # 这里填你的mysql的用户名
-    password: 123456   # 这里填你的mysql的密码
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    # 默认仍指向本机 3306，迁移到 Docker 后可通过环境变量覆盖。
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:33066/product?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia%2FTaipei}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:change-me-in-env}
     druid:
       # 配置连接超时时间
       connectTimeout: 30000

@@ -132,10 +132,10 @@ public class SecurityConfig
             })
             // 添加Logout filter
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
-            // 添加日志链路过滤器，保证后续过滤器和业务日志都带 traceId
-            .addFilterBefore(traceMdcFilter, JwtAuthenticationTokenFilter.class)
             // 添加JWT filter
             .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            // 添加日志链路过滤器，保证后续过滤器和业务日志都带 traceId
+            .addFilterBefore(traceMdcFilter, JwtAuthenticationTokenFilter.class)
             // 添加CORS filter
             .addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class)
             .addFilterBefore(corsFilter, LogoutFilter.class)

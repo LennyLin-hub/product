@@ -1,7 +1,10 @@
 package com.product.cache.aspect;
 
 import com.product.cache.annotation.MyRedisCache;
+import com.product.cache.constants.RedisLockKeys;
+import com.product.cache.lock.RedisDistributedLock;
 import com.product.cache.utils.SpelParser;
+import org.redisson.api.RLock;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -10,12 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static com.product.cache.script.RedisLuaScript.UNLOCK_SCRIPT;
 
 /**
  * @Auther: chuan
@@ -28,6 +27,8 @@ import static com.product.cache.script.RedisLuaScript.UNLOCK_SCRIPT;
 public class MyCacheAspect {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private RedisDistributedLock redisDistributedLock;
 
     @Around("@annotation(myRedisCache)")
     public Object around(ProceedingJoinPoint joinPoint, MyRedisCache myRedisCache) throws Throwable {
@@ -55,28 +56,22 @@ public class MyCacheAspect {
      * 带分布式锁的获取方式（解决热点Key击穿）
      */
     private Object getWithLock(String realKey, ProceedingJoinPoint joinPoint, MyRedisCache myRedisCache) throws Throwable {
-        String lockKey = "lock:" + realKey;
-        String requestId = UUID.randomUUID().toString();
+        String lockKey = RedisLockKeys.Cache.hotKey(realKey);
+        RLock lock = redisDistributedLock.getLock(lockKey);
 
-        // 尝试加锁：SET lock:key requestId NX EX 10
-        Boolean success = redisTemplate.opsForValue().setIfAbsent(lockKey, requestId, 10, TimeUnit.SECONDS);
-
-        if (Boolean.TRUE.equals(success)) {
-            try {
-                // 双重检查缓存 (Double Check)
-                Object data = redisTemplate.opsForValue().get(realKey);
-                if (data != null) return data;
-
-                // 拿到锁后查询数据库并保存
-                return getAndSave(realKey, joinPoint, myRedisCache);
-            } finally {
-                // --- 使用 Lua 脚本原子性释放锁 ---
-                redisTemplate.execute(UNLOCK_SCRIPT, Collections.singletonList(lockKey), requestId);
+        // 采用 Redisson 锁，避免手写 SETNX + Lua 解锁的并发边界问题
+        lock.lock();
+        try {
+            // 双重检查缓存 (Double Check)
+            Object data = redisTemplate.opsForValue().get(realKey);
+            if (data != null) {
+                return "EMPTY_VALUE".equals(data) ? null : data;
             }
-        } else {
-            // 没抢到锁：休眠后重试（递归）
-            Thread.sleep(100);
-            return around(joinPoint, myRedisCache);
+
+            // 拿到锁后查询数据库并保存
+            return getAndSave(realKey, joinPoint, myRedisCache);
+        } finally {
+            redisDistributedLock.unlock(lock);
         }
     }
 

@@ -1,0 +1,74 @@
+# ============================================
+# Filebeat 配置文件
+# 功能：从应用服务器收集 JSON 格式日志文件，并发送给 Logstash 处理
+# ============================================
+
+# --------------------------------------------
+# INPUT - 日志输入源配置
+# --------------------------------------------
+filebeat.inputs:
+  # ---------- 输入源 1: 应用日志 ----------
+  - type: filestream           # 文件流类型，持续监控文件变化（替代旧的 log 类型）
+    id: product-app            # 唯一标识符，用于区分不同的输入源
+    enabled: true              # 是否启用该输入源
+    paths:                     # 要监控的日志文件路径（支持通配符）
+      - /var/log/product/app*.json.log
+    fields:                    # 添加自定义字段到每条日志
+      service_name: ${SERVICE_NAME:product-server}    # 服务名（优先使用环境变量，否则用默认值）
+      env: ${APP_ENV:local}                              # 运行环境（dev/test/prod/local）
+      log_category: application                           # 日志类别（用于 ES 索引命名）
+    fields_under_root: true    # 将自定义字段放在根级别，不嵌套在 fields 字段下
+    parsers:                   # 解析器配置（解析 JSON 格式日志）
+      - ndjson:                # NDJSON (Newline Delimited JSON) 解析器
+          target: ""           # 解析后的字段放在根级别（不嵌套）
+          overwrite_keys: true # 如果字段已存在，则覆盖
+          add_error_key: true  # JSON 解析失败时，添加 error.message 和 error.key 字段
+
+  # ---------- 输入源 2: 错误日志 ----------
+  - type: filestream
+    id: product-error
+    enabled: true
+    paths:
+      - /var/log/product/error*.json.log
+    fields:
+      service_name: ${SERVICE_NAME:product-server}
+      env: ${APP_ENV:local}
+      log_category: error      # 错误日志类别，ES 索引将为 product-error-*
+    fields_under_root: true
+    parsers:
+      - ndjson:
+          target: ""
+          overwrite_keys: true
+          add_error_key: true
+
+  # ---------- 输入源 3: 审计日志 ----------
+  - type: filestream
+    id: product-audit
+    enabled: true
+    paths:
+      - /var/log/product/audit*.json.log
+    fields:
+      service_name: ${SERVICE_NAME:product-server}
+      env: ${APP_ENV:local}
+      log_category: audit      # 审计日志类别（如用户操作、权限变更等）
+    fields_under_root: true
+    parsers:
+      - ndjson:
+          target: ""
+          overwrite_keys: true
+          add_error_key: true
+
+# --------------------------------------------
+# PROCESSORS - 处理器配置
+# 在事件发送前添加额外的元数据
+# --------------------------------------------
+processors:
+  - add_host_metadata: ~       # 添加主机元数据：操作系统、架构、主机名、IP 地址等
+  - add_docker_metadata: ~     # 添加 Docker 容器元数据：容器名称、容器 ID、镜像名称等
+
+# --------------------------------------------
+# OUTPUT - 输出配置
+# --------------------------------------------
+output.logstash:
+  hosts: ["logstash:5044"]     # Logstash 服务地址（容器内使用服务名，端口需与 logstash.conf 中的一致）
+  # 注意：如果 Logstash 需要认证，可添加 username/password 配置

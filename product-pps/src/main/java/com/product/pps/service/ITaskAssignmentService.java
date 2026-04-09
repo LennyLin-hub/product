@@ -3,8 +3,11 @@ package com.product.pps.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.product.domain.dto.TaskAssignmentDTO;
+import com.product.domain.entity.ScheduleJob;
 import com.product.domain.entity.TaskAssignment;
 import com.product.domain.vo.TaskAssignmentVO;
+import com.product.pps.dto.ScheduleExecutionResult;
+import com.product.pps.dto.ScheduleProgressDTO;
 
 import java.util.List;
 
@@ -84,4 +87,28 @@ public interface ITaskAssignmentService extends IService<TaskAssignment> {
     boolean schedule(TaskAssignmentDTO taskAssignmentDTO);
 
     boolean scheduleAll(TaskAssignmentDTO taskAssignmentDTO);
+
+    /**
+     * 执行全量排程计划，返回执行结果。
+     *
+     * 说明：该方法只负责排程计算与结果落库，不负责创建/更新排程任务记录。
+     * 排程任务状态由 ScheduleJobService 统一维护。
+     */
+    ScheduleExecutionResult executeSchedulePlan(TaskAssignmentDTO taskAssignmentDTO);
+
+    /**
+     * 执行全量排程计划，并在计算过程中回传进度快照。
+     *
+     * @param taskAssignmentDTO 排程参数
+     * @param progressConsumer   进度回调（可为空）
+     * @return 排程执行结果
+     */
+    ScheduleExecutionResult executeSchedulePlan(TaskAssignmentDTO taskAssignmentDTO,
+                                                java.util.function.Consumer<ScheduleProgressDTO> progressConsumer);
+
+    String scheduleAllAsync(TaskAssignmentDTO taskAssignmentDTO);
+
+    ScheduleJob selectScheduleJobByJobId(String jobId);
+
+    Page<ScheduleJob> selectScheduleJobPage(Page<ScheduleJob> page, ScheduleJob scheduleJob);
 }

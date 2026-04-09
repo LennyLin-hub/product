@@ -1,18 +1,29 @@
-## 代码生成表查询 SQL 语法错误修复（2025-12-23）
+# 代码生成表查询 SQL 语法错误修复
 
-### 现象
-- 访问 `/tool/gen/{tableId}` 报 `BadSqlGrammarException`，MySQL 报错指向 `... t.options, t.remark       c.column_id ...` 处缺少逗号。
+记录代码生成模块中一次典型的 SQL 拼接错误，便于后续排查类似问题。
 
-### 根因
-- `product-become/src/main/resources/mapper/GenTableMapper.xml` 中三个查询（按 tableId、按 tableName、查询全部）在选择列时，`t.remark` 与后续 `c.column_id` 之间缺少分隔逗号，导致拼出的 SQL 语法错误。
+## 现象
 
-### 修复
-- 为三处 SELECT 列表补上逗号：
-  - `... t.options, t.remark, c.column_id ...`
+- 访问 `/tool/gen/{tableId}` 时抛出 `BadSqlGrammarException`
+- MySQL 报错位置指向 `t.remark` 与 `c.column_id` 之间缺少逗号
 
-### 验证步骤
-1. 重启后端或热加载 Mapper。
-2. 再次请求 `/tool/gen/{tableId}`，SQL 应正常执行，不再出现语法错误。
+## 根因
 
-### 影响范围
-- 仅影响代码生成模块的表与列联合查询，不涉及其他业务查询。
+- `product-become/src/main/resources/mapper/GenTableMapper.xml` 中的多个查询语句，在 `t.remark` 后漏写了分隔逗号
+
+## 修复
+
+- 为相关 `SELECT` 列表补上逗号
+- 修复后 SQL 片段应为 `... t.options, t.remark, c.column_id ...`
+
+## 验证步骤
+
+1. 重启后端或重新加载 Mapper
+2. 再次访问 `/tool/gen/{tableId}`
+3. 确认不再出现 SQL 语法错误
+
+## 影响范围
+
+- 仅影响代码生成模块的表与列联合查询
+- 不影响其他业务查询
+

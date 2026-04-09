@@ -34,4 +34,9 @@ public class StatusConstants {
     public static final String DOWN_RESOURCE_STATUS ="DOWN";
     public static final String MAINTENANCE_RESOURCE_STATUS ="MAINTENANCE";
     public static final String OFFSHIFT_RESOURCE_STATUS ="OFFSHIFT";
+
+    public static final String PENDING_SCHEDULE_JOB = "PENDING";
+    public static final String RUNNING_SCHEDULE_JOB = "RUNNING";
+    public static final String SUCCESS_SCHEDULE_JOB = "SUCCESS";
+    public static final String FAILED_SCHEDULE_JOB = "FAILED";
 }

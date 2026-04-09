@@ -204,8 +204,8 @@
     </appender>
 
     <!-- ==================== Logger配置 ==================== -->
-    <!-- com.product包：DEBUG级别（开发时便于调试） -->
-    <logger name="com.product" level="DEBUG"/>
+    <!-- com.product包默认INFO级别，避免生产环境输出过多调试日志 -->
+    <logger name="com.product" level="INFO"/>
     <!-- Spring框架：INFO级别 -->
     <logger name="org.springframework" level="INFO"/>
     <!-- sys-user审计日志：INFO级别，仅输出到AUDIT_FILE，不向上传播（additivity=false） -->

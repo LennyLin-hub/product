@@ -43,3 +43,7 @@ Thumbs.db
 
 ### Logs ###
 *.log
+*.sql
+.ace-tool/
+.env
+**/.env

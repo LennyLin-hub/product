@@ -106,7 +106,6 @@ public class CustomerController extends BaseController {
      */
     @DeleteMapping("/{customerIds}")
     public AjaxResult remove(@PathVariable Long[] customerIds) {
-        // TODO 需要删除联表数据
         return toAjax(customerService.deleteCustomerByCustomerIds(customerIds));
     }
 }
