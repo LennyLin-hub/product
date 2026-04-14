@@ -1,13 +1,14 @@
 package com.product.pps.service.impl;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.product.domain.dto.TaskAssignmentDTO;
 import com.product.domain.entity.Calendar;
 import com.product.domain.entity.OperationTask;
 import com.product.domain.entity.Resource;
 import com.product.pps.dto.ScheduleExecutionResult;
 import com.product.pps.dto.ScheduleProgressDTO;
+import com.product.pps.dto.TaskSchedulingPriorityDTO;
 import com.product.pps.enums.SchedulePhase;
+import com.product.pps.enums.SchedulingStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,14 +87,15 @@ public class TaskSchedulingCoordinator {
      */
     private ScheduleExecutionResult runScheduleAll(TaskAssignmentDTO taskAssignmentDTO, Consumer<ScheduleProgressDTO> progressConsumer) {
         long totalStart = System.currentTimeMillis();
+        SchedulingStrategy strategy = SchedulingStrategy.fromCode(taskAssignmentDTO == null ? null : taskAssignmentDTO.getScheduleStrategy());
 
         // 阶段1: 准备 — 获取排程基准时间、可用机台、任务总数、日历、机台内存快照
         LocalDateTime assignmentStart = resolveAssignmentStart(taskAssignmentDTO);
         CompletableFuture<List<Resource>> machinesFuture = CompletableFuture.supplyAsync(
                 taskSchedulingQueryService::loadAvailableMachines,
                 threadPoolTaskExecutor);
-        CompletableFuture<Integer> totalTaskCountFuture = CompletableFuture.supplyAsync(
-                taskSchedulingQueryService::countReadyTasks,
+        CompletableFuture<List<OperationTask>> readyTasksFuture = CompletableFuture.supplyAsync(
+                taskSchedulingQueryService::loadReadyTaskList,
                 threadPoolTaskExecutor);
 
         List<Resource> machines = machinesFuture.join();
@@ -105,7 +107,8 @@ public class TaskSchedulingCoordinator {
                 taskSchedulingQueryService::loadCalendarMap,
                 threadPoolTaskExecutor);
 
-        int totalTaskCount = totalTaskCountFuture.join();
+        List<OperationTask> readyTasks = readyTasksFuture.join();
+        int totalTaskCount = readyTasks == null ? 0 : readyTasks.size();
         if (totalTaskCount == 0) {
             notifyScheduleProgress(progressConsumer, 0, 0, 0, 100, SchedulePhase.NO_TASK);
             return ScheduleExecutionResult.success(0, 0);
@@ -114,26 +117,22 @@ public class TaskSchedulingCoordinator {
 
         Map<Long, Calendar> calendarMap = calendarMapFuture.join();
         TaskSchedulingCalculator.MachineRuntimeContext runtimeContext = taskSchedulingCalculator.buildMachineRuntimeContext(machines);
+        Map<String, TaskSchedulingPriorityDTO> priorityMap = SchedulingStrategy.DUE_DATE_PRIORITY == strategy
+                ? taskSchedulingQueryService.loadTaskPriorityMap(readyTasks)
+                : Map.of();
+        List<OperationTask> orderedTasks = taskSchedulingCalculator.orderTasks(readyTasks, strategy, priorityMap);
 
         // 阶段2: 分批计算（核心耗时），进度 0-90%
         List<TaskSchedulingCalculator.ScheduleBatchResult> batchResults = new ArrayList<>();
-        long current = 1L;
         int processedTaskCount = 0;
         int lastProgressPushTaskCount = 0;
         long calculateStart = System.currentTimeMillis();
 
-        while (true) {
-            // 分批获取状态就绪的任务
-            Page<OperationTask> taskPage = taskSchedulingQueryService.loadReadyTaskPage(current, scheduleBatchSize);
-            List<OperationTask> tasks = taskPage.getRecords();
-            if (CollectionUtils.isEmpty(tasks)) {
-                break;
-            }
+        for (int index = 0; index < orderedTasks.size(); index += scheduleBatchSize) {
+            List<OperationTask> tasks = orderedTasks.subList(index, Math.min(index + scheduleBatchSize, orderedTasks.size()));
             // 利用贪心算法匹配最早开始的机台
-            // TODO: 这里应该让在前端请求侧传策略参数，可以选择最早开始、最低成本或者是最快结束，增加另外两种算法处理
-            // TODO: 为机台以及模具添加能力矩阵，先预筛选除机台再进行贪心算法
             TaskSchedulingCalculator.ScheduleBatchResult batchResult = taskSchedulingCalculator.calculateBatchAssignments(
-                    tasks, machines, calendarMap, runtimeContext, assignmentStart);
+                    tasks, machines, calendarMap, runtimeContext, assignmentStart, strategy);
             batchResults.add(batchResult);
             processedTaskCount += tasks.size();
 
@@ -143,11 +142,6 @@ public class TaskSchedulingCoordinator {
                     lastProgressPushTaskCount,
                     processedTaskCount,
                     batchResults.size());
-
-            if (!taskPage.hasNext()) {
-                break;
-            }
-            current++;
         }
 
         if (CollectionUtils.isEmpty(batchResults)) {
@@ -166,14 +160,14 @@ public class TaskSchedulingCoordinator {
 
         // 阶段5: 进度推送 100%（成功）或标记失败
         if (Boolean.TRUE.equals(persisted)) {
-            log.info("scheduleAll completed: tasks={}, batches={}, machines={}, batchSize={}, calculateCostMs={}, persistCostMs={}, totalCostMs={}",
-                    totalTaskCount, batchResults.size(), machines.size(), scheduleBatchSize, calculateCost, persistCost, totalCost);
+            log.info("scheduleAll completed: tasks={}, batches={}, machines={}, batchSize={}, strategy={}, calculateCostMs={}, persistCostMs={}, totalCostMs={}",
+                    totalTaskCount, batchResults.size(), machines.size(), scheduleBatchSize, strategy.getCode(), calculateCost, persistCost, totalCost);
             notifyScheduleProgress(progressConsumer, totalTaskCount, totalTaskCount, batchResults.size(), 100, SchedulePhase.SUCCESS);
             return ScheduleExecutionResult.success(totalTaskCount, batchResults.size());
         }
 
-        log.warn("scheduleAll failed: tasks={}, batches={}, machines={}, batchSize={}, calculateCostMs={}, persistCostMs={}, totalCostMs={}",
-                totalTaskCount, batchResults.size(), machines.size(), scheduleBatchSize, calculateCost, persistCost, totalCost);
+        log.warn("scheduleAll failed: tasks={}, batches={}, machines={}, batchSize={}, strategy={}, calculateCostMs={}, persistCostMs={}, totalCostMs={}",
+                totalTaskCount, batchResults.size(), machines.size(), scheduleBatchSize, strategy.getCode(), calculateCost, persistCost, totalCost);
         return ScheduleExecutionResult.failure("排程结果落库失败", totalTaskCount, batchResults.size());
     }
 

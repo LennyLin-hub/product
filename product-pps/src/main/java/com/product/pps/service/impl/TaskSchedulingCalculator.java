@@ -8,7 +8,9 @@ import com.product.domain.entity.OperationTask;
 import com.product.domain.entity.Resource;
 import com.product.domain.entity.TaskAssignment;
 import com.product.pps.dto.MachineRuntimeStatsDTO;
+import com.product.pps.dto.TaskSchedulingPriorityDTO;
 import com.product.pps.mapper.TaskAssignmentMapper;
+import com.product.pps.enums.SchedulingStrategy;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
@@ -81,6 +84,18 @@ public class TaskSchedulingCalculator {
                                                          Map<Long, Calendar> calendarMap,
                                                          MachineRuntimeContext runtimeContext,
                                                          LocalDateTime assignmentStart) {
+        return calculateBatchAssignments(tasks, machines, calendarMap, runtimeContext, assignmentStart, SchedulingStrategy.EARLIEST_START);
+    }
+
+    /**
+     * 计算一批任务的机台分配方案（支持策略切换）。
+     */
+    public ScheduleBatchResult calculateBatchAssignments(List<OperationTask> tasks,
+                                                         List<Resource> machines,
+                                                         Map<Long, Calendar> calendarMap,
+                                                         MachineRuntimeContext runtimeContext,
+                                                         LocalDateTime assignmentStart,
+                                                         SchedulingStrategy strategy) {
         // 存储派工记录（待入库）
         List<TaskAssignment> assignments = new ArrayList<>(tasks.size());
         // 存储任务ID（用于后续批量更新任务状态）
@@ -96,7 +111,7 @@ public class TaskSchedulingCalculator {
             // 遍历所有可用机台，计算每台机的最早可用时间
             // 结合日历调整班次时间，处理跨班次顺延
             // 返回最早能开始任务的机台
-            MachineChoice choice = chooseMachine(task, machines, calendarMap, assignmentStart, runtimeContext);
+            MachineChoice choice = chooseMachine(task, machines, calendarMap, assignmentStart, runtimeContext, strategy);
             if (choice == null) {
                 throw new ServiceException("任务" + task.getTaskId() + "没有可用机台");
             }
@@ -118,6 +133,27 @@ public class TaskSchedulingCalculator {
             runtimeContext.update(choice.machineId, choice.plannedEnd, choice.sequenceOnResource);
         }
         return new ScheduleBatchResult(assignments, taskIds);
+    }
+
+    /**
+     * 按策略对任务排序。
+     *
+     * 排序规则由 strategy 决定：
+     * - EARLIEST_START：最早开始时间优先
+     * - EARLIEST_FINISH：预估最早结束时间优先
+     * - DUE_DATE_PRIORITY：交期优先，交期相同则按优先级（数值大优先）
+     *
+     * @param priorityMap 任务ID → 优先级上下文（交期、优先级），DUE_DATE_PRIORITY 策略必须传入
+     */
+    public List<OperationTask> orderTasks(List<OperationTask> tasks,
+                                          SchedulingStrategy strategy,
+                                          Map<String, TaskSchedulingPriorityDTO> priorityMap) {
+        if (CollectionUtils.isEmpty(tasks)) {
+            return new ArrayList<>();
+        }
+        List<OperationTask> ordered = new ArrayList<>(tasks);
+        ordered.sort(taskComparator(strategy, priorityMap));
+        return ordered;
     }
 
     /**
@@ -270,8 +306,10 @@ public class TaskSchedulingCalculator {
                                         List<Resource> machines,
                                         Map<Long, Calendar> calendarMap,
                                         LocalDateTime assignmentStart,
-                                        MachineRuntimeContext runtimeContext) {
+                                        MachineRuntimeContext runtimeContext,
+                                        SchedulingStrategy strategy) {
         MachineChoice best = null;
+        Comparator<MachineChoice> comparator = machineChoiceComparator(strategy);
         // 遍历所有可用机台，计算每台机的时间窗口
         for (Resource machine : machines) {
             if (machine == null) {
@@ -314,14 +352,83 @@ public class TaskSchedulingCalculator {
             MachineChoice choice = new MachineChoice(machine.getResourceId(), window.start, window.end, sequenceOnResource);
 
             // 比较并选择最优方案
-            // 优先级：1)开始时间更早  2)开始时间相同时结束时间更早
-            if (best == null
-                    || choice.plannedStart.isBefore(best.plannedStart)
-                    || (choice.plannedStart.isEqual(best.plannedStart) && choice.plannedEnd.isBefore(best.plannedEnd))) {
+            // 优先级由策略决定
+            if (best == null || comparator.compare(choice, best) < 0) {
                 best = choice;
             }
         }
         return best;  // 返回最早开始的机台
+    }
+
+    /**
+     * 根据策略构建机台选择比较器。
+     * EARLIEST_FINISH：优先选结束时间最早的机台（工期最短）
+     * 其他策略：优先选开始时间最早的机台（默认）
+     */
+    private Comparator<MachineChoice> machineChoiceComparator(SchedulingStrategy strategy) {
+        if (strategy == SchedulingStrategy.EARLIEST_FINISH) {
+            return Comparator.comparing((MachineChoice item) -> item.plannedEnd, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(item -> item.plannedStart, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(item -> item.machineId, Comparator.nullsLast(Comparator.naturalOrder()));
+        }
+        return Comparator.comparing((MachineChoice item) -> item.plannedStart, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(item -> item.plannedEnd, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(item -> item.machineId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    /**
+     * 根据策略构建任务排序比较器。
+     * 每种策略有不同的排序优先级链，末尾统一用 taskId 兜底保证排序稳定性。
+     */
+    private Comparator<OperationTask> taskComparator(SchedulingStrategy strategy, Map<String, TaskSchedulingPriorityDTO> priorityMap) {
+        if (strategy == SchedulingStrategy.DUE_DATE_PRIORITY) {
+            // 交期优先策略：订单交期早的先排，交期相同时优先级数值大的（更紧急）先排
+            // 无关联订单的任务（dueDate 为 null）排到最后
+            return Comparator
+                    .comparing((OperationTask task) -> priorityDate(task, priorityMap), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(task -> priorityValue(task, priorityMap), Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(task -> task.getEarliestStart(), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(task -> task.getSequence(), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(OperationTask::getTaskId, Comparator.nullsLast(Comparator.naturalOrder()));
+        }
+        if (strategy == SchedulingStrategy.EARLIEST_FINISH) {
+            // 最早完工策略：预估结束时间早的先排（工期短的任务先做，提高机台吞吐）
+            return Comparator
+                    .comparing((OperationTask task) -> estimateFinish(task), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(task -> task.getEarliestStart(), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(task -> task.getSequence(), Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(OperationTask::getTaskId, Comparator.nullsLast(Comparator.naturalOrder()));
+        }
+        // 默认策略（EARLIEST_START）：能最早开始的任务先排
+        return Comparator
+                .comparing((OperationTask task) -> task.getEarliestStart(), Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(task -> task.getSequence(), Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(OperationTask::getTaskId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    /** 预估任务结束时间 = 最早开始时间 + 标准时长（不考虑日历班次，仅用于排序比较） */
+    private LocalDateTime estimateFinish(OperationTask task) {
+        if (task == null) {
+            return null;
+        }
+        LocalDateTime start = task.getEarliestStart();
+        if (start == null) {
+            return null;
+        }
+        long duration = task.getStdDurationMin() == null ? 0L : task.getStdDurationMin();
+        return start.plusMinutes(duration);
+    }
+
+    /** 从优先级上下文中获取任务的订单交期 */
+    private LocalDateTime priorityDate(OperationTask task, Map<String, TaskSchedulingPriorityDTO> priorityMap) {
+        TaskSchedulingPriorityDTO context = priorityMap == null || task == null ? null : priorityMap.get(task.getTaskId());
+        return context == null ? null : context.getDueDate();
+    }
+
+    /** 从优先级上下文中获取任务的订单优先级（数值越大越紧急） */
+    private Long priorityValue(OperationTask task, Map<String, TaskSchedulingPriorityDTO> priorityMap) {
+        TaskSchedulingPriorityDTO context = priorityMap == null || task == null ? null : priorityMap.get(task.getTaskId());
+        return context == null ? null : context.getPriority();
     }
 
     private LocalDateTime maxTime(LocalDateTime... times) {

@@ -89,14 +89,6 @@ public interface ITaskAssignmentService extends IService<TaskAssignment> {
     boolean scheduleAll(TaskAssignmentDTO taskAssignmentDTO);
 
     /**
-     * 执行全量排程计划，返回执行结果。
-     *
-     * 说明：该方法只负责排程计算与结果落库，不负责创建/更新排程任务记录。
-     * 排程任务状态由 ScheduleJobService 统一维护。
-     */
-    ScheduleExecutionResult executeSchedulePlan(TaskAssignmentDTO taskAssignmentDTO);
-
-    /**
      * 执行全量排程计划，并在计算过程中回传进度快照。
      *
      * @param taskAssignmentDTO 排程参数

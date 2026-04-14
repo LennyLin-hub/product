@@ -17,6 +17,7 @@ import com.product.domain.entity.TaskAssignment;
 import com.product.domain.vo.TaskAssignmentVO;
 import com.product.pps.dto.ScheduleExecutionResult;
 import com.product.pps.dto.ScheduleProgressDTO;
+import com.product.pps.enums.SchedulingStrategy;
 import com.product.pps.mapper.TaskAssignmentMapper;
 import com.product.pps.service.IScheduleJobService;
 import com.product.pps.service.ITaskAssignmentService;
@@ -202,7 +203,8 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
         RLock lock = redisDistributedLock.getLock(RedisLockKeys.Pps.Schedule.EXECUTE_LOCK_KEY);
         lock.lock();
         try {
-            Boolean scheduled = transactionTemplate.execute(status -> scheduleTasks(List.of(task), assignmentStart));
+            SchedulingStrategy strategy = SchedulingStrategy.fromCode(taskAssignmentDTO.getScheduleStrategy());
+            Boolean scheduled = transactionTemplate.execute(status -> scheduleTasks(List.of(task), assignmentStart, strategy));
             return Boolean.TRUE.equals(scheduled);
         } finally {
             redisDistributedLock.unlock(lock);
@@ -220,12 +222,7 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
      */
     @Override
     public boolean scheduleAll(TaskAssignmentDTO taskAssignmentDTO) {
-        return executeSchedulePlan(taskAssignmentDTO).isSuccess();
-    }
-
-    @Override
-    public ScheduleExecutionResult executeSchedulePlan(TaskAssignmentDTO taskAssignmentDTO) {
-        return taskSchedulingCoordinator.executeSchedulePlan(taskAssignmentDTO);
+        return taskSchedulingCoordinator.executeSchedulePlan(taskAssignmentDTO).isSuccess();
     }
 
     @Override
@@ -302,13 +299,17 @@ public class TaskAssignmentServiceImpl extends ServiceImpl<TaskAssignmentMapper,
      * @return 是否排程成功
      */
     private boolean scheduleTasks(List<OperationTask> tasks, LocalDateTime assignmentStart) {
+        return scheduleTasks(tasks, assignmentStart, SchedulingStrategy.EARLIEST_START);
+    }
+
+    private boolean scheduleTasks(List<OperationTask> tasks, LocalDateTime assignmentStart, SchedulingStrategy strategy) {
         List<Resource> machines = taskSchedulingQueryService.loadAvailableMachines();
         if (CollectionUtils.isEmpty(machines)) {
             return false;
         }
         Map<Long, Calendar> calendarMap = taskSchedulingQueryService.loadCalendarMap(machines);
         TaskSchedulingCalculator.MachineRuntimeContext runtimeContext = taskSchedulingCalculator.buildMachineRuntimeContext(machines);
-        TaskSchedulingCalculator.ScheduleBatchResult batchResult = taskSchedulingCalculator.calculateBatchAssignments(tasks, machines, calendarMap, runtimeContext, assignmentStart);
+        TaskSchedulingCalculator.ScheduleBatchResult batchResult = taskSchedulingCalculator.calculateBatchAssignments(tasks, machines, calendarMap, runtimeContext, assignmentStart, strategy);
         return taskAssignmentPersistenceService.persistBatchResult(batchResult, scheduleBatchSize);
     }
 
