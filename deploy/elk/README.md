@@ -3,6 +3,7 @@
 ## 文件说明
 
 - `docker-compose.yml`: 启动 Elasticsearch、Kibana、Logstash 和 Filebeat 服务
+- `.env`: 单独启动 ELK 时使用的环境变量模板
 - `filebeat/filebeat.yml`: 采集 `product-server` 产生的 JSON 格式日志
 - `logstash/pipeline/logstash.conf`: 日志事件规范化处理并写入 Elasticsearch
 
@@ -15,6 +16,20 @@
 `docker-compose.yml` 通过以下环境变量将该路径挂载到 Filebeat 容器：
 
 - `PRODUCT_LOG_PATH`
+
+仓库中已提供 `deploy/elk/.env`，单独启动 ELK 时会自动读取它。默认内容如下：
+
+```dotenv
+PRODUCT_LOG_PATH=./logs
+SERVICE_NAME=product-server
+APP_ENV=local
+ELASTICSEARCH_PORT=9200
+KIBANA_PORT=5601
+LOGSTASH_BEATS_PORT=5044
+LOGSTASH_API_PORT=9600
+ES_JAVA_OPTS=-Xms1g -Xmx1g
+LS_JAVA_OPTS=-Xms512m -Xmx512m
+```
 
 如果你的运行时日志路径发生变化，可通过以下方式启动 compose：
 
@@ -90,3 +105,9 @@ docker compose -f deploy/elk/docker-compose.yml logs [服务名]
 1. 确认索引已创建：`curl http://localhost:9200/_cat/indices?v`
 2. 检查索引模式是否正确配置：`product-*`
 3. 等待 1-2 分钟让数据索引完成
+
+## 与根目录 `.env` 的关系
+
+- 根目录 `.env`：用于本地开发一键启动，`./scripts/dev-up.sh` 会同时拉起 `MySQL + Redis + ELK`，`./scripts/dev-run.sh` 会用同一份配置启动 Spring Boot。
+- `deploy/elk/.env`：用于单独执行 `docker compose -f deploy/elk/docker-compose.yml up -d` 时的独立配置。
+- 如果你希望日志路径、端口和 JVM 参数保持一致，优先修改根目录 `.env`，再按需同步到 `deploy/elk/.env`。

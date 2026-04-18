@@ -15,6 +15,7 @@
 ## 目录约定
 
 - `docker-compose.yml`: Redis 容器编排
+- `.env`: 单独启动 Redis 时使用的环境变量模板
 - `redis.conf`: 额外的 Redis 配置，如果后续需要细调可放这里
 - `data/`: Redis 持久化目录
 
@@ -28,7 +29,20 @@
 ss -lntp | grep 6379
 ```
 
-2. 启动 Redis 容器
+2. 准备容器参数
+
+仓库中已提供 `deploy/redis/.env`，单独启动 Redis 时会自动读取它。默认内容如下：
+
+```dotenv
+TZ=Asia/Taipei
+REDIS_PORT=6379
+REDIS_PASSWORD=123456
+REDIS_MAXMEMORY=256mb
+REDIS_MAXMEMORY_POLICY=allkeys-lru
+REDIS_DATABASES=16
+```
+
+3. 启动 Redis 容器
 
 ```bash
 docker compose -f deploy/redis/docker-compose.yml up -d
@@ -40,7 +54,7 @@ docker compose -f deploy/redis/docker-compose.yml up -d
 REDIS_PORT=6380 docker compose -f deploy/redis/docker-compose.yml up -d
 ```
 
-3. 验证 Redis 可用
+4. 验证 Redis 可用
 
 ```bash
 docker exec -it product-redis redis-cli -a "${REDIS_PASSWORD}" ping
@@ -52,7 +66,7 @@ docker exec -it product-redis redis-cli -a "${REDIS_PASSWORD}" ping
 PONG
 ```
 
-4. 切换应用连接
+5. 切换应用连接
 
 后端运行在宿主机时，推荐直接覆盖环境变量：
 
@@ -65,7 +79,7 @@ export SPRING_DATA_REDIS_DATABASE=0
 
 如果 Redis 容器映射的是其他端口，例如 `6380`，把 `SPRING_DATA_REDIS_PORT` 一起改掉即可。
 
-5. 启动后端并回归验证
+6. 启动后端并回归验证
 
 ```bash
 mvn spring-boot:run -pl product-server -Dspring.profiles.active=dev
@@ -91,6 +105,12 @@ mvn spring-boot:run -pl product-server -Dspring.profiles.active=dev
 - `appendonly yes` 会开启 AOF 持久化，磁盘占用会比纯内存模式高一些，但更适合业务缓存。
 - 如果你后面把应用也容器化，`SPRING_DATA_REDIS_HOST` 可以直接改成 `redis`，连宿主机端口都不需要暴露。
 - 现有默认密码仍是明文，建议后续统一放到 `.env` 或部署环境变量里。
+
+## 与根目录 `.env` 的关系
+
+- 根目录 `.env`：用于本地开发一键启动，`./scripts/dev-up.sh` 和 `./scripts/dev-run.sh` 都会读取。
+- `deploy/redis/.env`：用于单独执行 `docker compose -f deploy/redis/docker-compose.yml up -d` 时的独立配置。
+- 如果你希望两者保持一致，优先修改根目录 `.env`，再按需同步到 `deploy/redis/.env`。
 
 ## 是否要并入 ELK 的 compose
 

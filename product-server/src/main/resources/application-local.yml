@@ -1,0 +1,22 @@
+product:
+  # 本地开发默认上传目录，避免依赖其他机器上的绝对路径。
+  profile: ${PRODUCT_UPLOAD_PATH:./uploadPath}
+
+logging:
+  file:
+    path: ${PRODUCT_LOG_PATH:./logs}
+
+spring:
+  datasource:
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:123456}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
+      timeout: ${SPRING_DATA_REDIS_TIMEOUT:10000ms}
+
+token:
+  secret: ${TOKEN_SECRET:dev-token-secret}

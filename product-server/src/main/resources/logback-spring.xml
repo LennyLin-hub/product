@@ -6,7 +6,7 @@
     <!-- 从Spring配置中读取当前激活的profile，默认值为default -->
     <springProperty scope="context" name="activeProfile" source="spring.profiles.active" defaultValue="default"/>
     <!-- 从Spring配置中读取日志文件存储路径，默认值为项目logs目录 -->
-    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="/home/chuan/project/backend/logs"/>
+    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="./logs"/>
 
     <!-- ==================== 日志格式配置 ==================== -->
     <!-- 控制台日志输出格式：

@@ -100,17 +100,70 @@ mvn clean package -DskipTests
 mvn clean install
 ```
 
-5. 启动服务
+5. 准备本地 `.env`
+
+先复制一份开发环境模板：
 
 ```bash
-mvn spring-boot:run -pl product-server -Dspring.profiles.active=dev
+cp .env.example .env
 ```
 
-6. 访问应用
+根目录 `.env` 是开发环境的统一入口：
+
+- `docker compose` 读取它启动 MySQL、Redis 和 ELK
+- `./scripts/dev-run.sh` 会自动加载它并导出给 Spring Boot
+- `deploy/mysql/.env`、`deploy/redis/.env`、`deploy/elk/.env` 保留为单独启动某个依赖时的独立入口
+
+注意：如果 `.env` 里的值包含空格，例如 `ES_JAVA_OPTS`、`LS_JAVA_OPTS`，要写成带引号的形式，例如 `ES_JAVA_OPTS=\"-Xms1g -Xmx1g\"`。因为这份 `.env` 既会被 `docker compose` 读取，也会被 shell `source`。
+
+6. 启动依赖服务
+
+```bash
+./scripts/dev-up.sh
+```
+
+该脚本会通过根目录 `compose.dev.yml` 启动本地开发依赖：
+
+- MySQL：`${MYSQL_PORT}`，默认 `33066`
+- Redis：`${REDIS_PORT}`，默认 `6379`
+- Elasticsearch：`${ELASTICSEARCH_PORT}`，默认 `9200`
+- Kibana：`${KIBANA_PORT}`，默认 `5601`
+- Logstash API：`${LOGSTASH_API_PORT}`，默认 `9600`
+
+如果你不走一键开发脚本，而是想单独启动某个依赖，也可以直接使用模块目录下的配置：
+
+```bash
+docker compose -f deploy/mysql/docker-compose.yml up -d
+docker compose -f deploy/redis/docker-compose.yml up -d
+docker compose -f deploy/elk/docker-compose.yml up -d
+```
+
+这两条命令会分别读取：
+
+- [deploy/mysql/.env](/home/lenny/Projects/pps/product/deploy/mysql/.env:1)
+- [deploy/redis/.env](/home/lenny/Projects/pps/product/deploy/redis/.env:1)
+- [deploy/elk/.env](/home/lenny/Projects/pps/product/deploy/elk/.env:1)
+
+7. 启动服务
+
+```bash
+./scripts/dev-run.sh
+```
+
+本地开发 profile 为 `local`，会自动包含 `druid` 数据源配置，并优先读取根目录 `.env` 中的值。
+
+如果你启用了 ELK，应用日志会写到 `${PRODUCT_LOG_PATH}`，默认是 `./logs`，Filebeat 会从同一路径采集 JSON 日志。
+
+8. 访问应用
 
 ```text
 http://localhost:8081
 ```
+
+本地日志与观测入口：
+
+- Kibana：`http://localhost:5601`
+- Elasticsearch：`http://localhost:9200`
 
 ## 开发指南
 
@@ -249,6 +302,9 @@ mvn clean package
 mvn clean package -DskipTests
 mvn clean install
 mvn spring-boot:run -pl product-server
+cp .env.example .env
+./scripts/dev-up.sh
+./scripts/dev-run.sh
 mvn dependency:tree
 mvn test
 mvn test -Dtest=ProductServerApplicationTests

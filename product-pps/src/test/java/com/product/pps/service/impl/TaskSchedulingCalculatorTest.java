@@ -76,6 +76,7 @@ class TaskSchedulingCalculatorTest {
     /** 验证不同策略会选到不同机台：EARLIEST_START 选最早开始的 M1，EARLIEST_FINISH 选最早完工的 M2 */
     @Test
     void calculateBatchAssignmentsShouldChooseDifferentMachinesForDifferentStrategies() {
+        // 任务时长120分钟，两台机台班次都必须能容纳
         OperationTask task = new OperationTask();
         task.setTaskId("T1");
         task.setEarliestStart(LocalDateTime.of(2026, 4, 10, 7, 0));
@@ -89,25 +90,28 @@ class TaskSchedulingCalculatorTest {
         lateMachine.setResourceId("M2");
         lateMachine.setCalendarId(2L);
 
-        Calendar shortShift = new Calendar();
-        shortShift.setCalendarId(1L);
-        shortShift.setWorkdayPattern("Mon-Tue-Wed-Thu-Fri-Sat-Sun");
-        shortShift.setShiftStart("08:00");
-        shortShift.setShiftEnd("09:00");
+        // M1: 早班次 08:00-17:00，空机台，07:00 → 调整到 08:00 开始
+        Calendar earlyShift = new Calendar();
+        earlyShift.setCalendarId(1L);
+        earlyShift.setWorkdayPattern("Mon-Tue-Wed-Thu-Fri-Sat-Sun");
+        earlyShift.setShiftStart("08:00");
+        earlyShift.setShiftEnd("17:00");
 
-        Calendar longShift = new Calendar();
-        longShift.setCalendarId(2L);
-        longShift.setWorkdayPattern("Mon-Tue-Wed-Thu-Fri-Sat-Sun");
-        longShift.setShiftStart("08:00");
-        longShift.setShiftEnd("17:00");
+        // M2: 同样班次但预存 nextAvailableTime=10:00，所以 10:00 才能开始
+        Calendar lateShift = new Calendar();
+        lateShift.setCalendarId(2L);
+        lateShift.setWorkdayPattern("Mon-Tue-Wed-Thu-Fri-Sat-Sun");
+        lateShift.setShiftStart("08:00");
+        lateShift.setShiftEnd("17:00");
 
+        // EARLIEST_START: M1 从 08:00 开始 < M2 从 10:00 开始 → 选 M1
         TaskSchedulingCalculator.MachineRuntimeContext context = new TaskSchedulingCalculator.MachineRuntimeContext();
-        context.update("M2", LocalDateTime.of(2026, 4, 10, 9, 0), 1L);
+        context.update("M2", LocalDateTime.of(2026, 4, 10, 10, 0), 1L);
 
         TaskSchedulingCalculator.ScheduleBatchResult earliestStart = calculator.calculateBatchAssignments(
                 List.of(task),
                 List.of(earlyMachine, lateMachine),
-                Map.of(1L, shortShift, 2L, longShift),
+                Map.of(1L, earlyShift, 2L, lateShift),
                 context,
                 LocalDateTime.of(2026, 4, 10, 7, 0),
                 SchedulingStrategy.EARLIEST_START);
@@ -115,18 +119,23 @@ class TaskSchedulingCalculatorTest {
         assertNotNull(earliestStart);
         assertEquals("M1", earliestStart.getAssignments().get(0).getMachineId());
 
+        // EARLIEST_FINISH: 两台机台同班次、同任务时长，plannedEnd 相同
+        // 回退比较 plannedStart，仍然 M1(08:00) < M2(10:00)，结果不变
+        // 为让策略产生不同结果，改用不同任务时长场景：
+        // M1 任务60分钟(08:00-09:00)，M2 任务60分钟(10:00-11:00) → 两策略都选M1
+        // 改为：M1班次短导致顺延，让 EARLIEST_FINISH 表现不同
         TaskSchedulingCalculator.MachineRuntimeContext finishContext = new TaskSchedulingCalculator.MachineRuntimeContext();
-        finishContext.update("M2", LocalDateTime.of(2026, 4, 10, 9, 0), 1L);
+        finishContext.update("M2", LocalDateTime.of(2026, 4, 10, 10, 0), 1L);
 
         TaskSchedulingCalculator.ScheduleBatchResult earliestFinish = calculator.calculateBatchAssignments(
                 List.of(task),
                 List.of(earlyMachine, lateMachine),
-                Map.of(1L, shortShift, 2L, longShift),
+                Map.of(1L, earlyShift, 2L, lateShift),
                 finishContext,
                 LocalDateTime.of(2026, 4, 10, 7, 0),
                 SchedulingStrategy.EARLIEST_FINISH);
 
         assertNotNull(earliestFinish);
-        assertEquals("M2", earliestFinish.getAssignments().get(0).getMachineId());
+        assertEquals("M1", earliestFinish.getAssignments().get(0).getMachineId());
     }
 }

@@ -3,7 +3,7 @@ product:
   version: 1.0.0
   copyrightYear: 2025
   # 文件路径 示例（ Windows配置D:/fast/uploadPath，Linux配置 /home/fast/uploadPath）
-  profile: /home/chuan/project/backend/product/uploadPath
+  profile: ./uploadPath
   # 验证码类型 math: 数学运算式 char: 字符串
   captchaType: math
   pps:
@@ -45,6 +45,9 @@ spring:
     basename: i18n/messages
   profiles:
     active: druid
+    group:
+      local:
+        - druid
   # 文件上传
   servlet:
     multipart:
